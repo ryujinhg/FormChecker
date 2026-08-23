@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>FormChecker - フォームチェッカー</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body { font-family: -apple-system, sans-serif; background-color: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
+    header { width: 100%; max-width: 500px; text-align: center; padding: 4px 0; }
+    h1 { font-size: 1.2rem; color: #4da6ff; letter-spacing: 1px; }
+    
+    .status-banner { width: 100%; max-width: 500px; background: #1e1e1e; border: 2px solid #333; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .status-text { font-size: 1.2rem; font-weight: bold; color: #00ffcc; }
+    .status-sub { font-size: 0.85rem; color: #aaa; }
+
+    .btn-top-action { width: 100%; padding: 12px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+    .btn-start { background: #007bff; color: white; }
+    .btn-reset { background: #3a3a3c; color: #bbb; }
+
+    .video-container { position: relative; width: 100%; max-width: 500px; aspect-ratio: 3 / 4; background: #000; border-radius: 16px; overflow: hidden; margin-bottom: 10px; }
+    video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+    
+    .rec-indicator { position: absolute; top: 12px; left: 12px; background: rgba(255, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; display: none; align-items: center; gap: 6px; z-index: 15; }
+    .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
+    @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
+
+    .motion-zone { position: absolute; top: 10px; right: 10px; width: 85px; height: 85px; border: 3px dashed rgba(255, 215, 0, 0.8); background: rgba(255, 215, 0, 0.15); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffd700; font-weight: bold; font-size: 0.75rem; pointer-events: none; z-index: 10; }
+    .motion-zone.active { border-color: #00ff66; background: rgba(0, 255, 102, 0.3); color: #00ff66; scale: 1.05; }
+    
+    .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
+    .countdown-overlay.show { opacity: 1; }
+
+    .controls-panel { width: 100%; max-width: 500px; background: #1e1e1e; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
+    .setting-label { font-size: 0.9rem; font-weight: bold; }
+    .stepper { display: flex; align-items: center; gap: 6px; }
+    .btn-step { width: 40px; height: 40px; border-radius: 8px; border: none; background: #3a3a3c; color: #fff; font-size: 1.3rem; font-weight: bold; cursor: pointer; }
+    .value-display { font-size: 1rem; font-weight: bold; color: #00d2ff; min-width: 55px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <header><h1>FormChecker</h1></header>
+
+  <div class="status-banner">
+    <button id="mainBtn" class="btn-top-action btn-start" onclick="handleMainButtonClick()">カメラを起動する</button>
+    <div>
+      <div id="statusText" class="status-text" style="display:none;"></div>
+      <div id="statusSub" class="status-sub">端末を固定してご利用ください</div>
+    </div>
+  </div>
+
+  <div class="video-container">
+    <video id="webcam" autoplay playsinline muted></video>
+    <video id="playback" loop playsinline muted style="display:none;"></video>
+    
+    <canvas id="motionCanvas" style="display:none;"></canvas>
+
+    <div id="recIndicator" class="rec-indicator">
+      <div class="rec-dot"></div> REC
+    </div>
+    
+    <div id="motionZone" class="motion-zone" style="display:none;">
+      <div style="font-size: 1.4rem;">✋</div>
+      <div>手を振る</div>
+    </div>
+
+    <div id="countdownOverlay" class="countdown-overlay">3</div>
+  </div>
+
+  <div class="controls-panel">
+    <div class="setting-row">
+      <span class="setting-label">録画時間</span>
+      <div class="stepper">
+        <button class="btn-step" onclick="adjustSetting('rec', -0.1)">-</button>
+        <span id="recVal" class="value-display">1.3 秒</span>
+        <button class="btn-step" onclick="adjustSetting('rec', 0.1)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">移動待機時間</span>
+      <div class="stepper">
+        <button class="btn-step" onclick="adjustSetting('move', -0.5)">-</button>
+        <span id="moveVal" class="value-display">3.0 秒</span>
+        <button class="btn-step" onclick="adjustSetting('move', 0.5)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">再生速度</span>
+      <div class="stepper">
+        <button class="btn-step" onclick="toggleSpeed(-1)">&lt;</button>
+        <span id="speedVal" class="value-display">0.25x</span>
+        <button class="btn-step" onclick="toggleSpeed(1)">&gt;</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let recordDuration = 1.3, moveDelay = 3.0;
+    const speedOptions = [0.1, 0.2, 0.25, 0.5, 1.0];
+    let speedIndex = 2;
+
+    const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
+    let currentState = STATE.INIT;
+
+    const webcam = document.getElementById('webcam');
+    const playback = document.getElementById('playback');
+    const motionCanvas = document.getElementById('motionCanvas');
+    const motionCtx = motionCanvas.getContext('2d', { willReadFrequently: true });
+    const motionZone = document.getElementById('motionZone');
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const recIndicator = document.getElementById('recIndicator');
+    const mainBtn = document.getElementById('mainBtn');
+    const statusText = document.getElementById('statusText');
+    const statusSub = document.getElementById('statusSub');
+
+    let mediaStream = null, mediaRecorder = null, recordedChunks = [];
+    let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
+
+    function adjustSetting(type, delta) {
+      if (type === 'rec') {
+        recordDuration = Math.max(0.5, Math.min(5.0, parseFloat((recordDuration + delta).toFixed(1))));
+        document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
+      } else if (type === 'move') {
+        moveDelay = Math.max(0.5, Math.min(10.0, parseFloat((moveDelay + delta).toFixed(1))));
+        document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
+      }
+    }
+
+    function toggleSpeed(dir) {
+      speedIndex = (speedIndex + dir + speedOptions.length) % speedOptions.length;
+      document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
+      if (currentState === STATE.PLAYBACK) playback.playbackRate = speedOptions[speedIndex];
+    }
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const uttr = new SpeechSynthesisUtterance(text);
+        uttr.lang = 'ja-JP';
+        window.speechSynthesis.speak(uttr);
+      }
+    }
+
+    function handleMainButtonClick() {
+      if (currentState === STATE.INIT) {
+        initCamera();
+      } else {
+        resetToStandby();
+      }
+    }
+
+    async function initCamera() {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        webcam.srcObject = mediaStream;
+        await webcam.play();
+
+        motionCanvas.width = 160;
+        motionCanvas.height = 120;
+
+        mainBtn.innerText = '撮影待機に戻る';
+        mainBtn.className = 'btn-top-action btn-reset';
+        statusText.style.display = 'block';
+
+        speak('');
+        setStandbyState();
+      } catch (err) {
+        alert('カメラの起動に失敗しました。');
+      }
+    }
+
+    function setStandbyState() {
+      currentState = STATE.STANDBY;
+      if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
+
+      playback.pause();
+      playback.style.display = 'none';
+      webcam.style.display = 'block';
+
+      recIndicator.style.display = 'none';
+      motionZone.style.display = 'flex';
+      countdownOverlay.classList.remove('show');
+
+      statusText.innerText = '手を振ってください';
+      statusText.style.color = '#00ffcc';
+      statusSub.innerText = '右上の枠内で手を振ると撮影を開始します';
+
+      ignoreMotionUntil = Date.now() + 2000;
+      startMotionDetection();
+    }
+
+    function resetToStandby() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+      setStandbyState();
+    }
+
+    function startMotionDetection() {
+      function checkMotion() {
+        if (currentState !== STATE.STANDBY && currentState !== STATE.PLAYBACK) return;
+
+        if (webcam.readyState === webcam.HAVE_ENOUGH_DATA) {
+          motionCtx.drawImage(webcam, 0, 0, motionCanvas.width, motionCanvas.height);
+          
+          const roiX = Math.floor(motionCanvas.width * 0.65);
+          const roiY = Math.floor(motionCanvas.height * 0.05);
+          const roiW = Math.floor(motionCanvas.width * 0.3);
+          const roiH = Math.floor(motionCanvas.height * 0.3);
+
+          const currentFrame = motionCtx.getImageData(roiX, roiY, roiW, roiH);
+
+          if (prevFrameData && Date.now() > ignoreMotionUntil) {
+            let diffCount = 0;
+            for (let i = 0; i < currentFrame.data.length; i += 4) {
+              const diff = Math.abs(currentFrame.data[i] - prevFrameData.data[i]) +
+                           Math.abs(currentFrame.data[i+1] - prevFrameData.data[i+1]) +
+                           Math.abs(currentFrame.data[i+2] - prevFrameData.data[i+2]);
+              if (diff > 100) diffCount++;
+            }
+
+            const motionRatio = diffCount / (roiW * roiH);
+
+            if (motionRatio > 0.25) {
+              motionZone.classList.add('active');
+              if (currentState === STATE.STANDBY) {
+                startCountdownSequence();
+                return;
+              } else if (currentState === STATE.PLAYBACK) {
+                setStandbyState();
+                return;
+              }
+            } else {
+              motionZone.classList.remove('active');
+            }
+          }
+          prevFrameData = currentFrame;
+        }
+        requestAnimationFrame(checkMotion);
+      }
+      checkMotion();
+    }
+
+    function startCountdownSequence() {
+      currentState = STATE.COUNTDOWN;
+      motionZone.style.display = 'none';
+      
+      statusText.innerText = 'カウントダウン中...';
+      statusText.style.color = '#ffcc00';
+
+      let count = 3;
+      countdownOverlay.innerText = count;
+      countdownOverlay.classList.add('show');
+      speak('さん');
+
+      const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countdownOverlay.innerText = count;
+          if (count === 2) speak('に');
+          if (count === 1) speak('いち');
+        } else {
+          clearInterval(interval);
+          countdownOverlay.innerText = 'スタート';
+          speak('スタート');
+
+          setTimeout(() => {
+            countdownOverlay.classList.remove('show');
+            startRecording();
+          }, 300);
+        }
+      }, 1000);
+    }
+
+    function startRecording() {
+      currentState = STATE.RECORDING;
+      recordedChunks = [];
+
+      statusText.innerText = '録画中';
+      statusText.style.color = '#ff3366';
+      recIndicator.style.display = 'flex';
+
+      let options = {};
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+        options = { mimeType: 'video/webm;codecs=vp8' };
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        options = { mimeType: 'video/mp4' };
+      }
+
+      try {
+        mediaRecorder = new MediaRecorder(mediaStream, options);
+      } catch (e) {
+        mediaRecorder = new MediaRecorder(mediaStream);
+      }
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        recIndicator.style.display = 'none';
+        startMoveDelayPhase();
+      };
+
+      mediaRecorder.start(100);
+
+      setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      }, recordDuration * 1000);
+    }
+
+    function startMoveDelayPhase() {
+      currentState = STATE.MOVING;
+
+      statusText.innerText = '移動してください';
+      statusText.style.color = '#00d2ff';
+
+      let timeLeft = moveDelay;
+      countdownOverlay.innerText = Math.ceil(timeLeft);
+      countdownOverlay.classList.add('show');
+
+      const moveInterval = setInterval(() => {
+        timeLeft -= 0.5;
+        if (timeLeft > 0) {
+          countdownOverlay.innerText = Math.ceil(timeLeft);
+        } else {
+          clearInterval(moveInterval);
+          countdownOverlay.classList.remove('show');
+          startPlaybackPhase();
+        }
+      }, 500);
+    }
+
+    function startPlaybackPhase() {
+      currentState = STATE.PLAYBACK;
+
+      const mimeType = recordedChunks[0]?.type || 'video/webm';
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      recordedBlobUrl = URL.createObjectURL(blob);
+
+      playback.src = recordedBlobUrl;
+      playback.playbackRate = speedOptions[speedIndex];
+      
+      webcam.style.display = 'none';
+      playback.style.display = 'block';
+
+      playback.play().then(() => {
+        statusText.innerText = `スロー再生中 (${speedOptions[speedIndex]}x)`;
+        statusText.style.color = '#00ff66';
+        statusSub.innerText = '画面に向かって手を振ると次の撮影へ進みます';
+        
+        motionZone.style.display = 'none';
+
+        ignoreMotionUntil = Date.now() + 1500;
+        startMotionDetection();
+      }).catch(err => {
+        alert('動画の再生に失敗しました。');
+        setStandbyState();
+      });
+    }
+  </script>
+</body>
+</html>
