@@ -31,9 +31,9 @@
     .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
     @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
 
-    .motion-zone { position: absolute; top: 10px; right: 10px; width: 90px; height: 90px; border: 3px dashed rgba(255, 215, 0, 0.8); background: rgba(255, 215, 0, 0.15); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffd700; font-weight: bold; font-size: 0.75rem; pointer-events: none; z-index: 10; text-align: center; }
-    .motion-zone.active { border-color: #00ff66; background: rgba(0, 255, 102, 0.3); color: #00ff66; scale: 1.05; }
-    .motion-zone.ready { border-color: #ff00ff; background: rgba(255, 0, 255, 0.3); color: #ff00ff; }
+    /* 文字のみのシンプルな表示に変更 */
+    .motion-zone-text { position: absolute; top: 12px; right: 12px; font-weight: bold; font-size: 0.85rem; color: #ffd700; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 10; letter-spacing: 0.5px; }
+    .motion-zone-text.ready { color: #ff00ff; }
 
     .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
     .countdown-overlay.show { opacity: 1; }
@@ -68,10 +68,8 @@
       <div class="rec-dot"></div> REC
     </div>
 
-    <div id="motionZone" class="motion-zone" style="display:none;">
-      <div style="font-size: 1.2rem;">📡</div>
-      <div id="zoneText">動作検知</div>
-    </div>
+    <!-- シンプルなテキストのみ表示 -->
+    <div id="motionZoneText" class="motion-zone-text" style="display:none;">MOTION DETECTION</div>
 
     <div id="countdownOverlay" class="countdown-overlay">3</div>
   </div>
@@ -118,8 +116,7 @@
     const playback = document.getElementById('playback');
     const motionCanvas = document.getElementById('motionCanvas');
     const motionCtx = motionCanvas.getContext('2d', { willReadFrequently: true });
-    const motionZone = document.getElementById('motionZone');
-    const zoneText = document.getElementById('zoneText');
+    const motionZoneText = document.getElementById('motionZoneText');
     const countdownOverlay = document.getElementById('countdownOverlay');
     const recIndicator = document.getElementById('recIndicator');
     const mainBtn = document.getElementById('mainBtn');
@@ -145,11 +142,12 @@
       if (currentState === STATE.PLAYBACK) playback.playbackRate = speedOptions[speedIndex];
     }
 
-    function speak(text) {
+    // 英語発声対応
+    function speak(text, lang = 'en-US') {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const uttr = new SpeechSynthesisUtterance(text);
-        uttr.lang = 'ja-JP';
+        uttr.lang = lang;
         window.speechSynthesis.speak(uttr);
       }
     }
@@ -178,7 +176,7 @@
         mainBtn.className = 'btn-top-action btn-reset';
         statusText.style.display = 'block';
 
-        speak('');
+        speak('', 'en-US');
         setStandbyState();
       } catch (err) {
         alert('カメラの起動に失敗しました。');
@@ -195,14 +193,15 @@
       webcam.style.display = 'block';
 
       recIndicator.style.display = 'none';
-      motionZone.style.display = 'flex';
-      motionZone.classList.remove('ready', 'active');
-      zoneText.innerText = '動作検知';
+      motionZoneText.style.display = 'block';
+      motionZoneText.classList.remove('ready');
+      motionZoneText.innerText = 'MOTION DETECTION';
+
       countdownOverlay.classList.remove('show');
 
       statusText.innerText = '検知スタンバイ中';
       statusText.style.color = '#00ffcc';
-      statusSub.innerText = '右上の枠内で動作を検知すると準備完了になります';
+      statusSub.innerText = '画面全体で動作を検知すると準備完了になります';
 
       ignoreMotionUntil = Date.now() + 1500;
       startMotionDetection();
@@ -220,10 +219,11 @@
         if (webcam.readyState === webcam.HAVE_ENOUGH_DATA) {
           motionCtx.drawImage(webcam, 0, 0, motionCanvas.width, motionCanvas.height);
 
-          const roiX = Math.floor(motionCanvas.width * 0.65);
-          const roiY = Math.floor(motionCanvas.height * 0.05);
-          const roiW = Math.floor(motionCanvas.width * 0.3);
-          const roiH = Math.floor(motionCanvas.height * 0.3);
+          // 画面全体を検知領域とする
+          const roiX = 0;
+          const roiY = 0;
+          const roiW = motionCanvas.width;
+          const roiH = motionCanvas.height;
 
           const currentFrame = motionCtx.getImageData(roiX, roiY, roiW, roiH);
 
@@ -238,9 +238,8 @@
 
             const motionRatio = diffCount / (roiW * roiH);
 
-            if (motionRatio > 0.25) {
-              motionZone.classList.add('active');
-
+            // 画面全体の差分閾値（調整可能）
+            if (motionRatio > 0.15) {
               if (currentState === STATE.STANDBY) {
                 // 1回目の検知 ➔ 準備完了（READY）状態へ
                 setReadyState();
@@ -253,8 +252,6 @@
                 setStandbyState();
                 return;
               }
-            } else {
-              motionZone.classList.remove('active');
             }
           }
           prevFrameData = currentFrame;
@@ -266,14 +263,14 @@
 
     function setReadyState() {
       currentState = STATE.READY;
-      motionZone.classList.add('ready');
-      zoneText.innerText = '準備完了';
+      motionZoneText.classList.add('ready');
+      motionZoneText.innerText = 'READY';
 
-      statusText.innerText = '録画準備 OK！';
+      statusText.innerText = 'READY';
       statusText.style.color = '#ff00ff';
       statusSub.innerText = 'もう一度動作を検知するとカウントダウンを開始します';
 
-      speak('準備完了');
+      speak('Ready', 'en-US');
 
       ignoreMotionUntil = Date.now() + 1000; // 連投防止インターバル
 
@@ -291,7 +288,7 @@
     function startCountdownSequence() {
       currentState = STATE.COUNTDOWN;
       clearTimeout(readyTimeoutTimer);
-      motionZone.style.display = 'none';
+      motionZoneText.style.display = 'none';
 
       statusText.innerText = 'カウントダウン中...';
       statusText.style.color = '#ffcc00';
@@ -299,23 +296,19 @@
       let count = 3;
       countdownOverlay.innerText = count;
       countdownOverlay.classList.add('show');
-      speak('さん');
+      speak('Three', 'en-US');
 
       const interval = setInterval(() => {
         count--;
         if (count > 0) {
           countdownOverlay.innerText = count;
-          if (count === 2) speak('に');
-          if (count === 1) speak('いち');
+          if (count === 2) speak('Two', 'en-US');
+          if (count === 1) speak('One', 'en-US');
         } else {
           clearInterval(interval);
-          countdownOverlay.innerText = 'スタート';
-          speak('スタート');
-
-          setTimeout(() => {
-            countdownOverlay.classList.remove('show');
-            startRecording();
-          }, 300);
+          // 「スタート」の文字・音声はなしで即録画開始
+          countdownOverlay.classList.remove('show');
+          startRecording();
         }
       }, 1000);
     }
@@ -362,7 +355,8 @@
     function startMoveDelayPhase() {
       currentState = STATE.MOVING;
 
-      statusText.innerText = '移動してください';
+      // 「画像確認待機中...」にテキストを変更
+      statusText.innerText = '画像確認待機中...';
       statusText.style.color = '#00d2ff';
 
       let timeLeft = moveDelay;
@@ -397,9 +391,9 @@
       playback.play().then(() => {
         statusText.innerText = `スロー再生中 (${speedOptions[speedIndex]}x)`;
         statusText.style.color = '#00ff66';
-        statusSub.innerText = '枠内で動作を検知すると次の撮影へ進みます';
+        statusSub.innerText = '画面全体で動作を検知すると次の撮影へ進みます';
 
-        motionZone.style.display = 'none';
+        motionZoneText.style.display = 'none';
 
         ignoreMotionUntil = Date.now() + 1500;
         startMotionDetection();
