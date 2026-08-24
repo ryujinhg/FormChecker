@@ -15,7 +15,7 @@
     body { font-family: -apple-system, sans-serif; background-color: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
     header { width: 100%; max-width: 500px; text-align: center; padding: 4px 0; }
     h1 { font-size: 1.2rem; color: #4da6ff; letter-spacing: 1px; }
-    
+
     .status-banner { width: 100%; max-width: 500px; background: #1e1e1e; border: 2px solid #333; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .status-text { font-size: 1.2rem; font-weight: bold; color: #00ffcc; }
     .status-sub { font-size: 0.85rem; color: #aaa; }
@@ -26,14 +26,15 @@
 
     .video-container { position: relative; width: 100%; max-width: 500px; aspect-ratio: 3 / 4; background: #000; border-radius: 16px; overflow: hidden; margin-bottom: 10px; }
     video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-    
+
     .rec-indicator { position: absolute; top: 12px; left: 12px; background: rgba(255, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; display: none; align-items: center; gap: 6px; z-index: 15; }
     .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
     @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
 
-    .motion-zone { position: absolute; top: 10px; right: 10px; width: 85px; height: 85px; border: 3px dashed rgba(255, 215, 0, 0.8); background: rgba(255, 215, 0, 0.15); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffd700; font-weight: bold; font-size: 0.75rem; pointer-events: none; z-index: 10; }
+    .motion-zone { position: absolute; top: 10px; right: 10px; width: 90px; height: 90px; border: 3px dashed rgba(255, 215, 0, 0.8); background: rgba(255, 215, 0, 0.15); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffd700; font-weight: bold; font-size: 0.75rem; pointer-events: none; z-index: 10; text-align: center; }
     .motion-zone.active { border-color: #00ff66; background: rgba(0, 255, 102, 0.3); color: #00ff66; scale: 1.05; }
-    
+    .motion-zone.ready { border-color: #ff00ff; background: rgba(255, 0, 255, 0.3); color: #ff00ff; }
+
     .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
     .countdown-overlay.show { opacity: 1; }
 
@@ -60,16 +61,16 @@
   <div class="video-container">
     <video id="webcam" autoplay playsinline muted></video>
     <video id="playback" loop playsinline muted style="display:none;"></video>
-    
+
     <canvas id="motionCanvas" style="display:none;"></canvas>
 
     <div id="recIndicator" class="rec-indicator">
       <div class="rec-dot"></div> REC
     </div>
-    
+
     <div id="motionZone" class="motion-zone" style="display:none;">
-      <div style="font-size: 1.4rem;">✋</div>
-      <div>手を振る</div>
+      <div style="font-size: 1.2rem;">📡</div>
+      <div id="zoneText">動作検知</div>
     </div>
 
     <div id="countdownOverlay" class="countdown-overlay">3</div>
@@ -109,14 +110,16 @@
     const speedOptions = [0.1, 0.2, 0.25, 0.5, 1.0];
     let speedIndex = 2;
 
-    const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
+    const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
     let currentState = STATE.INIT;
+    let readyTimeoutTimer = null;
 
     const webcam = document.getElementById('webcam');
     const playback = document.getElementById('playback');
     const motionCanvas = document.getElementById('motionCanvas');
     const motionCtx = motionCanvas.getContext('2d', { willReadFrequently: true });
     const motionZone = document.getElementById('motionZone');
+    const zoneText = document.getElementById('zoneText');
     const countdownOverlay = document.getElementById('countdownOverlay');
     const recIndicator = document.getElementById('recIndicator');
     const mainBtn = document.getElementById('mainBtn');
@@ -184,6 +187,7 @@
 
     function setStandbyState() {
       currentState = STATE.STANDBY;
+      clearTimeout(readyTimeoutTimer);
       if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
 
       playback.pause();
@@ -192,13 +196,15 @@
 
       recIndicator.style.display = 'none';
       motionZone.style.display = 'flex';
+      motionZone.classList.remove('ready', 'active');
+      zoneText.innerText = '動作検知';
       countdownOverlay.classList.remove('show');
 
-      statusText.innerText = '手を振ってください';
+      statusText.innerText = '検知スタンバイ中';
       statusText.style.color = '#00ffcc';
-      statusSub.innerText = '右上の枠内で手を振ると撮影を開始します';
+      statusSub.innerText = '右上の枠内で動作を検知すると準備完了になります';
 
-      ignoreMotionUntil = Date.now() + 2000;
+      ignoreMotionUntil = Date.now() + 1500;
       startMotionDetection();
     }
 
@@ -209,11 +215,11 @@
 
     function startMotionDetection() {
       function checkMotion() {
-        if (currentState !== STATE.STANDBY && currentState !== STATE.PLAYBACK) return;
+        if (currentState !== STATE.STANDBY && currentState !== STATE.READY && currentState !== STATE.PLAYBACK) return;
 
         if (webcam.readyState === webcam.HAVE_ENOUGH_DATA) {
           motionCtx.drawImage(webcam, 0, 0, motionCanvas.width, motionCanvas.height);
-          
+
           const roiX = Math.floor(motionCanvas.width * 0.65);
           const roiY = Math.floor(motionCanvas.height * 0.05);
           const roiW = Math.floor(motionCanvas.width * 0.3);
@@ -234,7 +240,13 @@
 
             if (motionRatio > 0.25) {
               motionZone.classList.add('active');
+
               if (currentState === STATE.STANDBY) {
+                // 1回目の検知 ➔ 準備完了（READY）状態へ
+                setReadyState();
+                return;
+              } else if (currentState === STATE.READY) {
+                // 2回目の検知 ➔ カウントダウン開始
                 startCountdownSequence();
                 return;
               } else if (currentState === STATE.PLAYBACK) {
@@ -252,10 +264,35 @@
       checkMotion();
     }
 
+    function setReadyState() {
+      currentState = STATE.READY;
+      motionZone.classList.add('ready');
+      zoneText.innerText = '準備完了';
+
+      statusText.innerText = '録画準備 OK！';
+      statusText.style.color = '#ff00ff';
+      statusSub.innerText = 'もう一度動作を検知するとカウントダウンを開始します';
+
+      speak('準備完了');
+
+      ignoreMotionUntil = Date.now() + 1000; // 連投防止インターバル
+
+      // 10秒間何もしなければ待機に戻す
+      clearTimeout(readyTimeoutTimer);
+      readyTimeoutTimer = setTimeout(() => {
+        if (currentState === STATE.READY) {
+          setStandbyState();
+        }
+      }, 10000);
+
+      startMotionDetection();
+    }
+
     function startCountdownSequence() {
       currentState = STATE.COUNTDOWN;
+      clearTimeout(readyTimeoutTimer);
       motionZone.style.display = 'none';
-      
+
       statusText.innerText = 'カウントダウン中...';
       statusText.style.color = '#ffcc00';
 
@@ -353,15 +390,15 @@
 
       playback.src = recordedBlobUrl;
       playback.playbackRate = speedOptions[speedIndex];
-      
+
       webcam.style.display = 'none';
       playback.style.display = 'block';
 
       playback.play().then(() => {
         statusText.innerText = `スロー再生中 (${speedOptions[speedIndex]}x)`;
         statusText.style.color = '#00ff66';
-        statusSub.innerText = '画面に向かって手を振ると次の撮影へ進みます';
-        
+        statusSub.innerText = '枠内で動作を検知すると次の撮影へ進みます';
+
         motionZone.style.display = 'none';
 
         ignoreMotionUntil = Date.now() + 1500;
@@ -377,6 +414,6 @@
       navigator.serviceWorker.register('service-worker.js');
     }
   </script>
-  
+
 </body>
 </html>
