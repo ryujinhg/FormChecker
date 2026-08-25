@@ -3,449 +3,246 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>FormChecker - フォームチェッカー</title>
-
-  <!-- PWA設定 -->
+  <title>FormChecker</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <meta name="theme-color" content="#1e1e1e">
-
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-    body { font-family: -apple-system, sans-serif; background-color: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
-    header { width: 100%; max-width: 500px; text-align: center; padding: 4px 0; }
-    h1 { font-size: 1.2rem; color: #4da6ff; letter-spacing: 1px; }
-
-    .status-banner { width: 100%; max-width: 500px; background: #1e1e1e; border: 2px solid #333; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .status-text { font-size: 1.2rem; font-weight: bold; color: #00ffcc; }
-    .status-sub { font-size: 0.85rem; color: #aaa; }
-
-    .btn-top-action { width: 100%; padding: 12px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
-    .btn-start { background: #007bff; color: white; }
-    .btn-reset { background: #3a3a3c; color: #bbb; }
-
-    .video-container { position: relative; width: 100%; max-width: 500px; aspect-ratio: 3 / 4; background: #000; border-radius: 16px; overflow: hidden; margin-bottom: 10px; }
-    video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-
-    .rec-indicator { position: absolute; top: 12px; left: 12px; background: rgba(255, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; display: none; align-items: center; gap: 6px; z-index: 15; }
-    .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
-    @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
-
-    /* 文字のみのシンプルな表示 */
-    .motion-zone-text { position: absolute; top: 12px; right: 12px; font-weight: bold; font-size: 0.85rem; color: #ffd700; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 10; letter-spacing: 0.5px; }
-    .motion-zone-text.ready { color: #ff00ff; }
-
-    .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
-    .countdown-overlay.show { opacity: 1; }
-
-    .controls-panel { width: 100%; max-width: 500px; background: #1e1e1e; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-    .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
-    .setting-label { font-size: 0.9rem; font-weight: bold; }
-    .stepper { display: flex; align-items: center; gap: 6px; }
-    .btn-step { width: 40px; height: 40px; border-radius: 8px; border: none; background: #3a3a3c; color: #fff; font-size: 1.3rem; font-weight: bold; cursor: pointer; }
-    .value-display { font-size: 1rem; font-weight: bold; color: #00d2ff; min-width: 55px; text-align: center; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      overflow: hidden;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .controls-panel {
+      width: 100%;
+      max-width: 500px;
+      background: #1e1e1e;
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .setting-label {
+      font-size: 14px;
+      color: #ccc;
+    }
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-step {
+      background: #333;
+      color: #fff;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-step:active {
+      background: #555;
+    }
+    .value-display {
+      font-size: 16px;
+      min-width: 60px;
+      text-align: center;
+    }
+    .main-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #007aff;
+      color: #fff;
+    }
+    .main-btn:active {
+      opacity: 0.8;
+    }
+    .status-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #00ffcc;
+    }
   </style>
 </head>
 <body>
 
-  <header><h1>FormChecker</h1></header>
-
-  <div class="status-banner">
-    <button id="mainBtn" class="btn-top-action btn-start" onclick="handleMainButtonClick()">カメラを起動する</button>
-    <div>
-      <div id="statusText" class="status-text" style="display:none;"></div>
-      <div id="statusSub" class="status-sub">端末を固定してご利用ください</div>
-    </div>
-  </div>
-
   <div class="video-container">
     <video id="webcam" autoplay playsinline muted></video>
-    <video id="playback" loop playsinline muted style="display:none;"></video>
-
-    <canvas id="motionCanvas" style="display:none;"></canvas>
-
-    <div id="recIndicator" class="rec-indicator">
-      <div class="rec-dot"></div> REC
-    </div>
-
-    <!-- シンプルなテキストのみ表示 -->
-    <div id="motionZoneText" class="motion-zone-text" style="display:none;">MOTION DETECTION</div>
-
-    <div id="countdownOverlay" class="countdown-overlay">3</div>
+    <div id="statusBadge" class="status-badge">準備中...</div>
   </div>
 
   <div class="controls-panel">
+    <!-- 録画時間設定 -->
     <div class="setting-row">
       <span class="setting-label">録画時間</span>
       <div class="stepper">
-        <button class="btn-step" onclick="adjustSetting('rec', -0.1)">-</button>
-        <span id="recVal" class="value-display">1.3 秒</span>
-        <button class="btn-step" onclick="adjustSetting('rec', 0.1)">+</button>
+        <button class="btn-step" onclick="adjustSetting('record', -0.5)">-</button>
+        <span id="recVal" class="value-display">3.0 秒</span>
+        <button class="btn-step" onclick="adjustSetting('record', 0.5)">+</button>
       </div>
     </div>
 
+    <!-- 移動待機時間設定 -->
     <div class="setting-row">
       <span class="setting-label">移動待機時間</span>
       <div class="stepper">
         <button class="btn-step" onclick="adjustSetting('move', -0.5)">-</button>
-        <span id="moveVal" class="value-display">3.0 秒</span>
+        <span id="moveVal" class="value-display">2.0 秒</span>
         <button class="btn-step" onclick="adjustSetting('move', 0.5)">+</button>
       </div>
     </div>
 
+    <!-- 再生速度設定 -->
     <div class="setting-row">
       <span class="setting-label">再生速度</span>
       <div class="stepper">
-        <button class="btn-step" onclick="toggleSpeed(-1)">&lt;</button>
-        <span id="speedVal" class="value-display">0.25x</span>
-        <button class="btn-step" onclick="toggleSpeed(1)">&gt;</button>
+        <button class="btn-step" onclick="adjustSetting('speed', -1)">-</button>
+        <span id="speedVal" class="value-display">1.0x</span>
+        <button class="btn-step" onclick="adjustSetting('speed', 1)">+</button>
       </div>
     </div>
 
-    <!-- 新規追加：動体検知の感度（閾値）設定 -->
+    <!-- 検知感度設定（閾値） -->
     <div class="setting-row">
       <span class="setting-label">検知感度</span>
       <div class="stepper">
-        <!-- ＋を押すと数値が小さくなり、より敏感に反応 -->
-        <button class="btn-step" onclick="adjustSetting('sensitivity', -0.01)">+</button>
+        <button class="btn-step" onclick="adjustSetting('sensitivity', -0.01)">-</button>
         <span id="sensitivityVal" class="value-display">0.15</span>
-        <!-- −を押すと数値が大きくなり、誤反応を防止（鈍感） -->
-        <button class="btn-step" onclick="adjustSetting('sensitivity', 0.01)">-</button>
+        <button class="btn-step" onclick="adjustSetting('sensitivity', 0.01)">+</button>
       </div>
     </div>
+
+    <button id="startBtn" class="main-btn" onclick="toggleDetection()">検知スタート</button>
   </div>
 
   <script>
-    // LocalStorageからの復元（記憶がなければ初期値）
-    let recordDuration = parseFloat(localStorage.getItem('fc_recordDuration')) || 1.3;
-    let moveDelay = parseFloat(localStorage.getItem('fc_moveDelay')) || 3.0;
-    let motionThreshold = parseFloat(localStorage.getItem('fc_motionThreshold')) || 0.15;
-    
-    const speedOptions = [0.1, 0.2, 0.25, 0.5, 1.0];
-    let speedIndex = parseInt(localStorage.getItem('fc_speedIndex')) || 2;
+    // --- 変数管理 ---
+    let recordDuration = 3.0;
+    let moveDelay = 2.0;
+    const speedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    let speedIndex = 3; // 初期値: 1.0x
+    let motionThreshold = 0.15;
+    let isDetecting = false;
 
-    const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
-    let currentState = STATE.INIT;
-    let readyTimeoutTimer = null;
-
-    const webcam = document.getElementById('webcam');
-    const playback = document.getElementById('playback');
-    const motionCanvas = document.getElementById('motionCanvas');
-    const motionCtx = motionCanvas.getContext('2d', { willReadFrequently: true });
-    const motionZoneText = document.getElementById('motionZoneText');
-    const countdownOverlay = document.getElementById('countdownOverlay');
-    const recIndicator = document.getElementById('recIndicator');
-    const mainBtn = document.getElementById('mainBtn');
-    const statusText = document.getElementById('statusText');
-    const statusSub = document.getElementById('statusSub');
-
-    let mediaStream = null, mediaRecorder = null, recordedChunks = [];
-    let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
-
-    // 初期化時に保存された設定値を表示に反映
+    // --- 【デバッグポイント 1】UI初期化処理の安全性確保 ---
     function initUIValues() {
-      document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
-      document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
-      document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
-      document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
-    }
-    initUIValues();
+      const recEl = document.getElementById('recVal');
+      const moveEl = document.getElementById('moveVal');
+      const speedEl = document.getElementById('speedVal');
+      const sensEl = document.getElementById('sensitivityVal');
 
+      if (recEl) recEl.innerText = recordDuration.toFixed(1) + ' 秒';
+      if (moveEl) moveEl.innerText = moveDelay.toFixed(1) + ' 秒';
+      if (speedEl) speedEl.innerText = speedOptions[speedIndex] + 'x';
+      if (sensEl) sensEl.innerText = motionThreshold.toFixed(2);
+    }
+
+    // HTMLの全要素が読み込まれた後に確実に初期化を実行
+    window.addEventListener('DOMContentLoaded', () => {
+      initUIValues();
+      initCamera();
+    });
+
+    // --- 設定値の変更処理 ---
     function adjustSetting(type, delta) {
-      if (type === 'rec') {
-        recordDuration = Math.max(0.5, Math.min(5.0, parseFloat((recordDuration + delta).toFixed(1))));
-        document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
-        localStorage.setItem('fc_recordDuration', recordDuration);
+      if (type === 'record') {
+        recordDuration = Math.max(0.5, recordDuration + delta);
       } else if (type === 'move') {
-        moveDelay = Math.max(0.5, Math.min(10.0, parseFloat((moveDelay + delta).toFixed(1))));
-        document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
-        localStorage.setItem('fc_moveDelay', moveDelay);
+        moveDelay = Math.max(0.0, moveDelay + delta);
+      } else if (type === 'speed') {
+        speedIndex = Math.max(0, Math.min(speedOptions.length - 1, speedIndex + delta));
       } else if (type === 'sensitivity') {
-        // 0.02(超敏感) 〜 0.50(鈍感) の範囲で0.01刻み調整
-        motionThreshold = Math.max(0.02, Math.min(0.50, parseFloat((motionThreshold + delta).toFixed(2))));
-        document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
-        localStorage.setItem('fc_motionThreshold', motionThreshold);
+        motionThreshold = Math.max(0.01, Math.min(1.00, motionThreshold + delta));
       }
+      initUIValues(); // 変更後に表示を更新
     }
 
-    function toggleSpeed(dir) {
-      speedIndex = (speedIndex + dir + speedOptions.length) % speedOptions.length;
-      document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
-      localStorage.setItem('fc_speedIndex', speedIndex);
-      if (currentState === STATE.PLAYBACK) playback.playbackRate = speedOptions[speedIndex];
-    }
-
-    // 英語発声対応
-    function speak(text, lang = 'en-US') {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const uttr = new SpeechSynthesisUtterance(text);
-        uttr.lang = lang;
-        window.speechSynthesis.speak(uttr);
-      }
-    }
-
-    function handleMainButtonClick() {
-      if (currentState === STATE.INIT) {
-        initCamera();
-      } else {
-        resetToStandby();
-      }
-    }
-
+    // --- カメラの初期化 ---
     async function initCamera() {
+      const video = document.getElementById('webcam');
+      const statusBadge = document.getElementById('statusBadge');
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'environment', 
-            width: { ideal: 1920 }, 
-            height: { ideal: 1080 },
-            frameRate: { ideal: 60 } // 高フレームレートを優先リクエスト
-          },
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
           audio: false
         });
-        webcam.srcObject = mediaStream;
-        await webcam.play();
-
-        motionCanvas.width = 160;
-        motionCanvas.height = 120;
-
-        mainBtn.innerText = '撮影待機に戻る';
-        mainBtn.className = 'btn-top-action btn-reset';
-        statusText.style.display = 'block';
-
-        speak('', 'en-US');
-        setStandbyState();
+        video.srcObject = stream;
+        if (statusBadge) statusBadge.innerText = '待機中';
       } catch (err) {
-        alert('カメラの起動に失敗しました。');
+        console.error('カメラの起動に失敗しました:', err);
+        if (statusBadge) statusBadge.innerText = 'カメラエラー';
       }
     }
 
-    function setStandbyState() {
-      currentState = STATE.STANDBY;
-      clearTimeout(readyTimeoutTimer);
-      if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
+    // --- 検知のオン/オフ切り替え ---
+    function toggleDetection() {
+      const startBtn = document.getElementById('startBtn');
+      const statusBadge = document.getElementById('statusBadge');
+      isDetecting = !isDetecting;
 
-      playback.pause();
-      playback.style.display = 'none';
-      webcam.style.display = 'block';
-
-      recIndicator.style.display = 'none';
-      motionZoneText.style.display = 'block';
-      motionZoneText.classList.remove('ready');
-      motionZoneText.innerText = 'MOTION DETECTION';
-
-      countdownOverlay.classList.remove('show');
-
-      statusText.innerText = '検知スタンバイ中';
-      statusText.style.color = '#00ffcc';
-      statusSub.innerText = '画面全体で動作を検知すると準備完了になります';
-
-      ignoreMotionUntil = Date.now() + 1500;
-      startMotionDetection();
-    }
-
-    function resetToStandby() {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-      setStandbyState();
-    }
-
-    function startMotionDetection() {
-      function checkMotion() {
-        if (currentState !== STATE.STANDBY && currentState !== STATE.READY && currentState !== STATE.PLAYBACK) return;
-
-        if (webcam.readyState === webcam.HAVE_ENOUGH_DATA) {
-          motionCtx.drawImage(webcam, 0, 0, motionCanvas.width, motionCanvas.height);
-
-          // 画面全体を検知領域とする
-          const roiX = 0;
-          const roiY = 0;
-          const roiW = motionCanvas.width;
-          const roiH = motionCanvas.height;
-
-          const currentFrame = motionCtx.getImageData(roiX, roiY, roiW, roiH);
-
-          if (prevFrameData && Date.now() > ignoreMotionUntil) {
-            let diffCount = 0;
-            for (let i = 0; i < currentFrame.data.length; i += 4) {
-              const diff = Math.abs(currentFrame.data[i] - prevFrameData.data[i]) +
-                           Math.abs(currentFrame.data[i+1] - prevFrameData.data[i+1]) +
-                           Math.abs(currentFrame.data[i+2] - prevFrameData.data[i+2]);
-              if (diff > 100) diffCount++;
-            }
-
-            const motionRatio = diffCount / (roiW * roiH);
-
-            // 設定された閾値（motionThreshold）と比較して動体検知
-            if (motionRatio > motionThreshold) {
-              if (currentState === STATE.STANDBY) {
-                // 1回目の検知 ➔ 準備完了（READY）状態へ
-                setReadyState();
-                return;
-              } else if (currentState === STATE.READY) {
-                // 2回目の検知 ➔ カウントダウン開始
-                startCountdownSequence();
-                return;
-              } else if (currentState === STATE.PLAYBACK) {
-                setStandbyState();
-                return;
-              }
-            }
-          }
-          prevFrameData = currentFrame;
-        }
-        requestAnimationFrame(checkMotion);
+      if (isDetecting) {
+        if (startBtn) startBtn.innerText = '停止';
+        if (statusBadge) statusBadge.innerText = '動きを検知中...';
+      } else {
+        if (startBtn) startBtn.innerText = '検知スタート';
+        if (statusBadge) statusBadge.innerText = '待機中';
       }
-      checkMotion();
     }
 
-    function setReadyState() {
-      currentState = STATE.READY;
-      motionZoneText.classList.add('ready');
-      motionZoneText.innerText = 'READY';
-
-      statusText.innerText = 'READY';
-      statusText.style.color = '#ff00ff';
-      statusSub.innerText = 'もう一度動作を検知するとカウントダウンを開始します';
-
-      speak('Ready', 'en-US');
-
-      ignoreMotionUntil = Date.now() + 1000; // 連投防止インターバル
-
-      // 10秒間何もしなければ待機に戻す
-      clearTimeout(readyTimeoutTimer);
-      readyTimeoutTimer = setTimeout(() => {
-        if (currentState === STATE.READY) {
-          setStandbyState();
-        }
-      }, 10000);
-
-      startMotionDetection();
-    }
-
-    function startCountdownSequence() {
-      currentState = STATE.COUNTDOWN;
-      clearTimeout(readyTimeoutTimer);
-      motionZoneText.style.display = 'none';
-
-      statusText.innerText = 'カウントダウン中...';
-      statusText.style.color = '#ffcc00';
-
-      let count = 3;
-      countdownOverlay.innerText = count;
-      countdownOverlay.classList.add('show');
-      speak('Three', 'en-US');
-
-      const interval = setInterval(() => {
-        count--;
-        if (count > 0) {
-          countdownOverlay.innerText = count;
-          if (count === 2) speak('Two', 'en-US');
-          if (count === 1) speak('One', 'en-US');
-        } else {
-          clearInterval(interval);
-          // 「スタート」の文字・音声なしで即録画開始
-          countdownOverlay.classList.remove('show');
-          startRecording();
-        }
-      }, 1000);
-    }
-
-    function startRecording() {
-      currentState = STATE.RECORDING;
-      recordedChunks = [];
-
-      statusText.innerText = '録画中';
-      statusText.style.color = '#ff3366';
-      recIndicator.style.display = 'flex';
-
-      let options = {};
-      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-        options = { mimeType: 'video/webm;codecs=vp8' };
-      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-        options = { mimeType: 'video/mp4' };
-      }
-
-      try {
-        mediaRecorder = new MediaRecorder(mediaStream, options);
-      } catch (e) {
-        mediaRecorder = new MediaRecorder(mediaStream);
-      }
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        recIndicator.style.display = 'none';
-        startMoveDelayPhase();
-      };
-
-      mediaRecorder.start(100);
-
-      setTimeout(() => {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-          mediaRecorder.stop();
-        }
-      }, recordDuration * 1000);
-    }
-
-    function startMoveDelayPhase() {
-      currentState = STATE.MOVING;
-
-      // 「画像確認待機中...」に表示を変更
-      statusText.innerText = '画像確認待機中...';
-      statusText.style.color = '#00d2ff';
-
-      let timeLeft = moveDelay;
-      countdownOverlay.innerText = Math.ceil(timeLeft);
-      countdownOverlay.classList.add('show');
-
-      const moveInterval = setInterval(() => {
-        timeLeft -= 0.5;
-        if (timeLeft > 0) {
-          countdownOverlay.innerText = Math.ceil(timeLeft);
-        } else {
-          clearInterval(moveInterval);
-          countdownOverlay.classList.remove('show');
-          startPlaybackPhase();
-        }
-      }, 500);
-    }
-
-    function startPlaybackPhase() {
-      currentState = STATE.PLAYBACK;
-
-      const mimeType = recordedChunks[0]?.type || 'video/webm';
-      const blob = new Blob(recordedChunks, { type: mimeType });
-      recordedBlobUrl = URL.createObjectURL(blob);
-
-      playback.src = recordedBlobUrl;
-      playback.playbackRate = speedOptions[speedIndex];
-
-      webcam.style.display = 'none';
-      playback.style.display = 'block';
-
-      playback.play().then(() => {
-        statusText.innerText = `スロー再生中 (${speedOptions[speedIndex]}x)`;
-        statusText.style.color = '#00ff66';
-        statusSub.innerText = '画面全体で動作を検知すると次の撮影へ進みます';
-
-        motionZoneText.style.display = 'none';
-
-        ignoreMotionUntil = Date.now() + 1500;
-        startMotionDetection();
-      }).catch(err => {
-        alert('動画の再生に失敗しました。');
-        setStandbyState();
+    // PWA Service Workerの登録
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch(err => {
+          console.log('SW registration failed: ', err);
+        });
       });
     }
-
-    // Service Workerの登録処理
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
   </script>
-
 </body>
 </html>
