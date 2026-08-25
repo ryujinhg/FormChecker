@@ -31,7 +31,7 @@
     .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
     @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
 
-    /* 文字のみのシンプルな表示に変更 */
+    /* 文字のみのシンプルな表示 */
     .motion-zone-text { position: absolute; top: 12px; right: 12px; font-weight: bold; font-size: 0.85rem; color: #ffd700; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 10; letter-spacing: 0.5px; }
     .motion-zone-text.ready { color: #ff00ff; }
 
@@ -101,12 +101,28 @@
         <button class="btn-step" onclick="toggleSpeed(1)">&gt;</button>
       </div>
     </div>
+
+    <!-- 新規追加：動体検知の感度（閾値）設定 -->
+    <div class="setting-row">
+      <span class="setting-label">検知感度</span>
+      <div class="stepper">
+        <!-- ＋を押すと数値が小さくなり、より敏感に反応 -->
+        <button class="btn-step" onclick="adjustSetting('sensitivity', -0.01)">+</button>
+        <span id="sensitivityVal" class="value-display">0.15</span>
+        <!-- −を押すと数値が大きくなり、誤反応を防止（鈍感） -->
+        <button class="btn-step" onclick="adjustSetting('sensitivity', 0.01)">-</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    let recordDuration = 1.3, moveDelay = 3.0;
+    // LocalStorageからの復元（記憶がなければ初期値）
+    let recordDuration = parseFloat(localStorage.getItem('fc_recordDuration')) || 1.3;
+    let moveDelay = parseFloat(localStorage.getItem('fc_moveDelay')) || 3.0;
+    let motionThreshold = parseFloat(localStorage.getItem('fc_motionThreshold')) || 0.15;
+    
     const speedOptions = [0.1, 0.2, 0.25, 0.5, 1.0];
-    let speedIndex = 2;
+    let speedIndex = parseInt(localStorage.getItem('fc_speedIndex')) || 2;
 
     const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
     let currentState = STATE.INIT;
@@ -126,19 +142,36 @@
     let mediaStream = null, mediaRecorder = null, recordedChunks = [];
     let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
 
+    // 初期化時に保存された設定値を表示に反映
+    function initUIValues() {
+      document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
+      document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
+      document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
+      document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
+    }
+    initUIValues();
+
     function adjustSetting(type, delta) {
       if (type === 'rec') {
         recordDuration = Math.max(0.5, Math.min(5.0, parseFloat((recordDuration + delta).toFixed(1))));
         document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
+        localStorage.setItem('fc_recordDuration', recordDuration);
       } else if (type === 'move') {
         moveDelay = Math.max(0.5, Math.min(10.0, parseFloat((moveDelay + delta).toFixed(1))));
         document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
+        localStorage.setItem('fc_moveDelay', moveDelay);
+      } else if (type === 'sensitivity') {
+        // 0.02(超敏感) 〜 0.50(鈍感) の範囲で0.01刻み調整
+        motionThreshold = Math.max(0.02, Math.min(0.50, parseFloat((motionThreshold + delta).toFixed(2))));
+        document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
+        localStorage.setItem('fc_motionThreshold', motionThreshold);
       }
     }
 
     function toggleSpeed(dir) {
       speedIndex = (speedIndex + dir + speedOptions.length) % speedOptions.length;
       document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
+      localStorage.setItem('fc_speedIndex', speedIndex);
       if (currentState === STATE.PLAYBACK) playback.playbackRate = speedOptions[speedIndex];
     }
 
@@ -163,7 +196,12 @@
     async function initCamera() {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { 
+            facingMode: 'environment', 
+            width: { ideal: 1280 }, 
+            height: { ideal: 720 },
+            frameRate: { ideal: 60 } // 高フレームレートを優先リクエスト
+          },
           audio: false
         });
         webcam.srcObject = mediaStream;
@@ -238,8 +276,8 @@
 
             const motionRatio = diffCount / (roiW * roiH);
 
-            // 画面全体の差分閾値（調整可能）
-            if (motionRatio > 0.15) {
+            // 設定された閾値（motionThreshold）と比較して動体検知
+            if (motionRatio > motionThreshold) {
               if (currentState === STATE.STANDBY) {
                 // 1回目の検知 ➔ 準備完了（READY）状態へ
                 setReadyState();
@@ -306,7 +344,7 @@
           if (count === 1) speak('One', 'en-US');
         } else {
           clearInterval(interval);
-          // 「スタート」の文字・音声はなしで即録画開始
+          // 「スタート」の文字・音声なしで即録画開始
           countdownOverlay.classList.remove('show');
           startRecording();
         }
@@ -355,7 +393,7 @@
     function startMoveDelayPhase() {
       currentState = STATE.MOVING;
 
-      // 「画像確認待機中...」にテキストを変更
+      // 「画像確認待機中...」に表示を変更
       statusText.innerText = '画像確認待機中...';
       statusText.style.color = '#00d2ff';
 
