@@ -48,7 +48,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: 40vh;
+      max-height: 50vh;
       overflow-y: auto;
     }
     .setting-row {
@@ -98,23 +98,12 @@
     .main-btn:active {
       opacity: 0.8;
     }
-    .status-badge {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      color: #00ffcc;
-    }
   </style>
 </head>
 <body>
 
   <div class="video-container">
     <video id="webcam" autoplay playsinline muted></video>
-    <div id="statusBadge" class="status-badge">準備中...</div>
   </div>
 
   <div class="controls-panel">
@@ -158,7 +147,8 @@
       </div>
     </div>
 
-    <button id="startBtn" class="main-btn" onclick="toggleDetection()">検知スタート</button>
+    <!-- 元通りの「カメラを起動」ボタン -->
+    <button id="startBtn" class="main-btn" onclick="startCamera()">カメラを起動</button>
   </div>
 
   <script>
@@ -168,9 +158,8 @@
     const speedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
     let speedIndex = 3; // 初期値: 1.0x
     let motionThreshold = 0.15;
-    let isDetecting = false;
 
-    // --- 【デバッグポイント 1】UI初期化処理の安全性確保 ---
+    // --- UI表示の初期化（エラー回避処理を追加） ---
     function initUIValues() {
       const recEl = document.getElementById('recVal');
       const moveEl = document.getElementById('moveVal');
@@ -183,13 +172,12 @@
       if (sensEl) sensEl.innerText = motionThreshold.toFixed(2);
     }
 
-    // HTMLの全要素が読み込まれた後に確実に初期化を実行
+    // HTML読み込み完了後にUI初期化を実行
     window.addEventListener('DOMContentLoaded', () => {
       initUIValues();
-      initCamera();
     });
 
-    // --- 設定値の変更処理 ---
+    // --- 設定値の調整 ---
     function adjustSetting(type, delta) {
       if (type === 'record') {
         recordDuration = Math.max(0.5, recordDuration + delta);
@@ -200,38 +188,21 @@
       } else if (type === 'sensitivity') {
         motionThreshold = Math.max(0.01, Math.min(1.00, motionThreshold + delta));
       }
-      initUIValues(); // 変更後に表示を更新
+      initUIValues();
     }
 
-    // --- カメラの初期化 ---
-    async function initCamera() {
+    // --- カメラの起動処理 ---
+    async function startCamera() {
       const video = document.getElementById('webcam');
-      const statusBadge = document.getElementById('statusBadge');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'user' },
           audio: false
         });
         video.srcObject = stream;
-        if (statusBadge) statusBadge.innerText = '待機中';
       } catch (err) {
         console.error('カメラの起動に失敗しました:', err);
-        if (statusBadge) statusBadge.innerText = 'カメラエラー';
-      }
-    }
-
-    // --- 検知のオン/オフ切り替え ---
-    function toggleDetection() {
-      const startBtn = document.getElementById('startBtn');
-      const statusBadge = document.getElementById('statusBadge');
-      isDetecting = !isDetecting;
-
-      if (isDetecting) {
-        if (startBtn) startBtn.innerText = '停止';
-        if (statusBadge) statusBadge.innerText = '動きを検知中...';
-      } else {
-        if (startBtn) startBtn.innerText = '検知スタート';
-        if (statusBadge) statusBadge.innerText = '待機中';
+        alert('カメラの起動に失敗しました。');
       }
     }
 
