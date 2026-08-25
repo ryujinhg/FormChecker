@@ -107,13 +107,16 @@
   </div>
 
   <div class="controls-panel">
-    <!-- 録画時間設定 -->
+    <!-- カメラを起動ボタン（一番上） -->
+    <button id="startBtn" class="main-btn" onclick="startCamera()">カメラを起動</button>
+
+    <!-- 録画時間設定（0.1秒刻み） -->
     <div class="setting-row">
       <span class="setting-label">録画時間</span>
       <div class="stepper">
-        <button class="btn-step" onclick="adjustSetting('record', -0.5)">-</button>
+        <button class="btn-step" onclick="adjustSetting('record', -0.1)">-</button>
         <span id="recVal" class="value-display">3.0 秒</span>
-        <button class="btn-step" onclick="adjustSetting('record', 0.5)">+</button>
+        <button class="btn-step" onclick="adjustSetting('record', 0.1)">+</button>
       </div>
     </div>
 
@@ -127,7 +130,7 @@
       </div>
     </div>
 
-    <!-- 再生速度設定 -->
+    <!-- 再生速度設定（最大1.0倍） -->
     <div class="setting-row">
       <span class="setting-label">再生速度</span>
       <div class="stepper">
@@ -137,7 +140,7 @@
       </div>
     </div>
 
-    <!-- 検知感度設定（閾値） -->
+    <!-- 検知感度設定 -->
     <div class="setting-row">
       <span class="setting-label">検知感度</span>
       <div class="stepper">
@@ -146,20 +149,18 @@
         <button class="btn-step" onclick="adjustSetting('sensitivity', 0.01)">+</button>
       </div>
     </div>
-
-    <!-- 元通りの「カメラを起動」ボタン -->
-    <button id="startBtn" class="main-btn" onclick="startCamera()">カメラを起動</button>
   </div>
 
   <script>
     // --- 変数管理 ---
     let recordDuration = 3.0;
     let moveDelay = 2.0;
-    const speedOptions = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    // 再生速度は最大1.0倍限定
+    const speedOptions = [0.25, 0.5, 0.75, 1.0];
     let speedIndex = 3; // 初期値: 1.0x
     let motionThreshold = 0.15;
 
-    // --- UI表示の初期化（エラー回避処理を追加） ---
+    // --- UI表示の初期化 ---
     function initUIValues() {
       const recEl = document.getElementById('recVal');
       const moveEl = document.getElementById('moveVal');
@@ -172,7 +173,7 @@
       if (sensEl) sensEl.innerText = motionThreshold.toFixed(2);
     }
 
-    // HTML読み込み完了後にUI初期化を実行
+    // DOM構築完了後に初期化を実行
     window.addEventListener('DOMContentLoaded', () => {
       initUIValues();
     });
@@ -180,13 +181,14 @@
     // --- 設定値の調整 ---
     function adjustSetting(type, delta) {
       if (type === 'record') {
-        recordDuration = Math.max(0.5, recordDuration + delta);
+        // 0.1秒単位の計算誤差対策
+        recordDuration = Math.max(0.1, Math.round((recordDuration + delta) * 10) / 10);
       } else if (type === 'move') {
         moveDelay = Math.max(0.0, moveDelay + delta);
       } else if (type === 'speed') {
         speedIndex = Math.max(0, Math.min(speedOptions.length - 1, speedIndex + delta));
       } else if (type === 'sensitivity') {
-        motionThreshold = Math.max(0.01, Math.min(1.00, motionThreshold + delta));
+        motionThreshold = Math.max(0.01, Math.min(1.00, Math.round((motionThreshold + delta) * 100) / 100));
       }
       initUIValues();
     }
