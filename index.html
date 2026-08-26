@@ -6,7 +6,7 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json?v=2">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
@@ -415,10 +415,28 @@
       });
     }
 
-    // Service Workerの登録処理
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
+// Service Workerの登録と自動更新処理
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').then((registration) => {
+      // 新しいService Workerが検出されたかチェック
+      registration.onupdatefound = () => {
+        const installingWorker = registration.installing;
+        if (installingWorker != null) {
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                // 新しいバージョンが利用可能になったら自動リロード
+                console.log('新しいバージョンが検出されました。再読み込みします。');
+                window.location.reload();
+              }
+            }
+          };
+        }
+      };
+    });
+  });
+}
   </script>
 
 </body>
