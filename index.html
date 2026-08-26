@@ -114,7 +114,7 @@
   </div>
 
   <script>
-// 1. 設定の読み込み
+    // 1. 設定の読み込み（保存値を取り出し、無ければデフォルト値）
     let recordDuration = parseFloat(localStorage.getItem('formchecker_rec')) || 1.8;
     let moveDelay      = parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
     let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex')) || 2;
@@ -122,7 +122,26 @@
 
     const speedOptions = [0.1, 0.2, 0.25, 0.5, 1.0];
 
-    // 2. 画面読み込み時に表示を合わせる
+    // アプリの状態管理変数
+    const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
+    let currentState = STATE.INIT;
+    let readyTimeoutTimer = null;
+
+    const webcam = document.getElementById('webcam');
+    const playback = document.getElementById('playback');
+    const motionCanvas = document.getElementById('motionCanvas');
+    const motionCtx = motionCanvas.getContext('2d', { willReadFrequently: true });
+    const motionZoneText = document.getElementById('motionZoneText');
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const recIndicator = document.getElementById('recIndicator');
+    const mainBtn = document.getElementById('mainBtn');
+    const statusText = document.getElementById('statusText');
+    const statusSub = document.getElementById('statusSub');
+
+    let mediaStream = null, mediaRecorder = null, recordedChunks = [];
+    let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
+
+    // 2. 画面読み込み時に表示を保存値に合わせる
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
       document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
@@ -154,12 +173,6 @@
       localStorage.setItem('formchecker_speedIndex', speedIndex);
     }
 
-    function toggleSpeed(dir) {
-      speedIndex = (speedIndex + dir + speedOptions.length) % speedOptions.length;
-      document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
-      if (currentState === STATE.PLAYBACK) playback.playbackRate = speedOptions[speedIndex];
-    }
-
     // 英語発声対応
     function speak(text, lang = 'en-US') {
       if ('speechSynthesis' in window) {
@@ -185,7 +198,7 @@
             facingMode: 'environment', 
             width: { ideal: 1920 }, 
             height: { ideal: 1080 },
-            frameRate: { ideal: 60 } // スマホが対応していれば60fpsを優先取得
+            frameRate: { ideal: 60 }
           },
           audio: false
         });
@@ -242,7 +255,6 @@
         if (webcam.readyState === webcam.HAVE_ENOUGH_DATA) {
           motionCtx.drawImage(webcam, 0, 0, motionCanvas.width, motionCanvas.height);
 
-          // 画面全体を検知領域とする
           const roiX = 0;
           const roiY = 0;
           const roiW = motionCanvas.width;
@@ -261,14 +273,11 @@
 
             const motionRatio = diffCount / (roiW * roiH);
 
-            // 設定パネルで選択した motionThreshold を適用
             if (motionRatio > motionThreshold) {
               if (currentState === STATE.STANDBY) {
-                // 1回目の検知 ➔ 準備完了（READY）状態へ
                 setReadyState();
                 return;
               } else if (currentState === STATE.READY) {
-                // 2回目の検知 ➔ カウントダウン開始
                 startCountdownSequence();
                 return;
               } else if (currentState === STATE.PLAYBACK) {
@@ -295,9 +304,8 @@
 
       speak('Ready', 'en-US');
 
-      ignoreMotionUntil = Date.now() + 1000; // 連投防止インターバル
+      ignoreMotionUntil = Date.now() + 1000;
 
-      // 10秒間何もしなければ待機に戻す
       clearTimeout(readyTimeoutTimer);
       readyTimeoutTimer = setTimeout(() => {
         if (currentState === STATE.READY) {
@@ -424,28 +432,26 @@
       });
     }
 
-// Service Workerの登録と自動更新処理
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').then((registration) => {
-      // 新しいService Workerが検出されたかチェック
-      registration.onupdatefound = () => {
-        const installingWorker = registration.installing;
-        if (installingWorker != null) {
-          installingWorker.onstatechange = () => {
-            if (installingWorker.state === 'installed') {
-              if (navigator.serviceWorker.controller) {
-                // 新しいバージョンが利用可能になったら自動リロード
-                console.log('新しいバージョンが検出されました。再読み込みします。');
-                window.location.reload();
-              }
+    // Service Workerの登録と自動更新処理
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').then((registration) => {
+          registration.onupdatefound = () => {
+            const installingWorker = registration.installing;
+            if (installingWorker != null) {
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    console.log('新しいバージョンが検出されました。再読み込みします。');
+                    window.location.reload();
+                  }
+                }
+              };
             }
           };
-        }
-      };
-    });
-  });
-}
+        });
+      });
+    }
   </script>
 
 </body>
