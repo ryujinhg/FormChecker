@@ -6,7 +6,7 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-  <link rel="manifest" href="manifest.json?v=5">
+  <link rel="manifest" href="manifest.json?v=6">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
@@ -37,17 +37,22 @@
     .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
     .countdown-overlay.show { opacity: 1; }
 
-    /* ★ 修正: プログレスバーの領域 */
     .progress-bar-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 5px; background: rgba(255, 255, 255, 0.2); z-index: 25; display: none; }
-    
-    /* ★ 修正: バー自体（JSで毎フレーム書き換えず、CSSのアニメーションで滑らかに動かす） */
     .progress-bar { width: 0%; height: 100%; background: #ff3366; }
     .progress-bar.animate-rec {
       width: 100%;
-      /* transition時間とタイミング関数をCSSで直接処理（JS非依存） */
       transition-property: width;
       transition-timing-function: linear;
     }
+
+    /* 設定パネル用スタイル（しっかり補完しました） */
+    .controls-panel { width: 100%; max-width: 500px; background: #1e1e1e; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
+    .setting-label { font-size: 0.9rem; font-weight: bold; }
+    .stepper { display: flex; align-items: center; gap: 6px; }
+    .btn-step { width: 40px; height: 40px; border-radius: 8px; border: none; background: #3a3a3c; color: #fff; font-size: 1.3rem; font-weight: bold; cursor: pointer; }
+    .btn-step:active { background: #555; }
+    .value-display { font-size: 1rem; font-weight: bold; color: #00d2ff; min-width: 55px; text-align: center; }
   </style>
 </head>
 <body>
@@ -122,14 +127,22 @@
   <script>
     let recordDuration = parseFloat(localStorage.getItem('formchecker_rec')) || 1.8;
     let moveDelay      = parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
-    let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex')) || 2;
+    let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex'), 10);
+    if (isNaN(speedIndex)) speedIndex = 1; // デフォルトは 0.25x
+
     let motionThreshold= parseFloat(localStorage.getItem('formchecker_sensitivity')) || 0.15;
 
-    const speedOptions = [0.1, 0.2, 0.25, 0.5, 1.0];
+    // 最低値を 0.15x に変更
+    const speedOptions = [0.15, 0.25, 0.5, 1.0];
 
     const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
     let currentState = STATE.INIT;
-    let readyTimeoutTimer = null;
+
+    // タイマー保持用（競合を完全に防ぎます）
+    let readyTimeoutTimer   = null;
+    let countdownInterval   = null;
+    let recTimeoutTimer     = null;
+    let moveIntervalTimer   = null;
 
     const webcam = document.getElementById('webcam');
     const playback = document.getElementById('playback');
@@ -229,9 +242,18 @@
       progressBarContainer.style.display = 'none';
     }
 
+    // 動き中のタイマーを一括クリアする関数
+    function clearAllTimers() {
+      if (readyTimeoutTimer) { clearTimeout(readyTimeoutTimer); readyTimeoutTimer = null; }
+      if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+      if (recTimeoutTimer)   { clearTimeout(recTimeoutTimer); recTimeoutTimer = null; }
+      if (moveIntervalTimer) { clearInterval(moveIntervalTimer); moveIntervalTimer = null; }
+    }
+
     function setStandbyState() {
       currentState = STATE.STANDBY;
-      clearTimeout(readyTimeoutTimer);
+      clearAllTimers();
+
       if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
 
       playback.pause();
@@ -256,7 +278,9 @@
     }
 
     function resetToStandby() {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
       setStandbyState();
     }
 
@@ -300,9 +324,10 @@
           }
           prevFrameData = currentFrame;
         }
+        // 精度最高・ブレなしのフルスピード（約60fps）で検知
         requestAnimationFrame(checkMotion);
       }
-      checkMotion();
+      requestAnimationFrame(checkMotion);
     }
 
     function setReadyState() {
@@ -318,7 +343,7 @@
 
       ignoreMotionUntil = Date.now() + 1000;
 
-      clearTimeout(readyTimeoutTimer);
+      clearAllTimers();
       readyTimeoutTimer = setTimeout(() => {
         if (currentState === STATE.READY) {
           setStandbyState();
@@ -330,7 +355,7 @@
 
     function startCountdownSequence() {
       currentState = STATE.COUNTDOWN;
-      clearTimeout(readyTimeoutTimer);
+      clearAllTimers();
       motionZoneText.style.display = 'none';
 
       statusText.innerText = 'カウントダウン中...';
@@ -341,14 +366,15 @@
       countdownOverlay.classList.add('show');
       speak('Three', 'en-US');
 
-      const interval = setInterval(() => {
+      countdownInterval = setInterval(() => {
         count--;
         if (count > 0) {
           countdownOverlay.innerText = count;
           if (count === 2) speak('Two', 'en-US');
           if (count === 1) speak('One', 'en-US');
         } else {
-          clearInterval(interval);
+          clearInterval(countdownInterval);
+          countdownInterval = null;
           countdownOverlay.classList.remove('show');
           startRecording();
         }
@@ -363,12 +389,10 @@
       statusText.style.color = '#ff3366';
       recIndicator.style.display = 'flex';
 
-      // ★ 修正: CSSアニメーションで負荷ゼロでバーを伸ばす
       resetProgressBar();
       progressBarContainer.style.display = 'block';
       progressBar.style.backgroundColor = '#ff3366';
 
-      // 1ミリ秒後にアニメーションを開始させる（リセットを即時適用するため）
       setTimeout(() => {
         if (currentState === STATE.RECORDING) {
           progressBar.style.transitionDuration = `${recordDuration}s`;
@@ -396,12 +420,15 @@
       mediaRecorder.onstop = () => {
         recIndicator.style.display = 'none';
         resetProgressBar();
-        startMoveDelayPhase();
+        // RECORDING状態のまま正常終了した場合のみ移行
+        if (currentState === STATE.RECORDING) {
+          startMoveDelayPhase();
+        }
       };
 
       mediaRecorder.start(100);
 
-      setTimeout(() => {
+      recTimeoutTimer = setTimeout(() => {
         if (mediaRecorder && mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
         }
@@ -419,12 +446,13 @@
       countdownOverlay.innerText = Math.ceil(timeLeft);
       countdownOverlay.classList.add('show');
 
-      const moveInterval = setInterval(() => {
+      moveIntervalTimer = setInterval(() => {
         timeLeft -= 0.5;
         if (timeLeft > 0) {
           countdownOverlay.innerText = Math.ceil(timeLeft);
         } else {
-          clearInterval(moveInterval);
+          clearInterval(moveIntervalTimer);
+          moveIntervalTimer = null;
           countdownOverlay.classList.remove('show');
           startPlaybackPhase();
         }
@@ -444,7 +472,6 @@
       webcam.style.display = 'none';
       playback.style.display = 'block';
 
-      // ★ 修正: 再生時のバー設定
       resetProgressBar();
       progressBarContainer.style.display = 'block';
       progressBar.style.backgroundColor = '#00ff66';
@@ -480,7 +507,6 @@
               installingWorker.onstatechange = () => {
                 if (installingWorker.state === 'installed') {
                   if (navigator.serviceWorker.controller) {
-                    console.log('新しいバージョンが検出されました。再読み込みします。');
                     window.location.reload();
                   }
                 }
