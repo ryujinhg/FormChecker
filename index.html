@@ -181,7 +181,12 @@
     async function initCamera() {
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { 
+            facingMode: 'environment', 
+            width: { ideal: 1920 }, 
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60 } // スマホが対応していれば60fpsを優先取得
+          },
           audio: false
         });
         webcam.srcObject = mediaStream;
