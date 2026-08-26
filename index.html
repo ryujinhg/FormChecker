@@ -45,7 +45,6 @@
       transition-timing-function: linear;
     }
 
-    /* 設定パネル用スタイル（しっかり補完しました） */
     .controls-panel { width: 100%; max-width: 500px; background: #1e1e1e; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
     .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
     .setting-label { font-size: 0.9rem; font-weight: bold; }
@@ -128,20 +127,20 @@
     let recordDuration = parseFloat(localStorage.getItem('formchecker_rec')) || 1.8;
     let moveDelay      = parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
     let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex'), 10);
-    if (isNaN(speedIndex)) speedIndex = 1; // デフォルトは 0.25x
+    if (isNaN(speedIndex)) speedIndex = 1;
 
     let motionThreshold= parseFloat(localStorage.getItem('formchecker_sensitivity')) || 0.15;
 
-    // 最低値を 0.15x に変更
     const speedOptions = [0.15, 0.25, 0.5, 1.0];
 
     const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
     let currentState = STATE.INIT;
 
-    // タイマー保持用（競合を完全に防ぎます）
+    // タイマー保持用（修正1: プログレスバーアニメ用タイマーも追加）
     let readyTimeoutTimer   = null;
     let countdownInterval   = null;
     let recTimeoutTimer     = null;
+    let recAnimTimer        = null;
     let moveIntervalTimer   = null;
 
     const webcam = document.getElementById('webcam');
@@ -242,11 +241,12 @@
       progressBarContainer.style.display = 'none';
     }
 
-    // 動き中のタイマーを一括クリアする関数
+    // 修正1: recAnimTimer もクリア対象に追加
     function clearAllTimers() {
       if (readyTimeoutTimer) { clearTimeout(readyTimeoutTimer); readyTimeoutTimer = null; }
       if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
       if (recTimeoutTimer)   { clearTimeout(recTimeoutTimer); recTimeoutTimer = null; }
+      if (recAnimTimer)      { clearTimeout(recAnimTimer); recAnimTimer = null; }
       if (moveIntervalTimer) { clearInterval(moveIntervalTimer); moveIntervalTimer = null; }
     }
 
@@ -254,7 +254,11 @@
       currentState = STATE.STANDBY;
       clearAllTimers();
 
-      if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
+      // 修正3: revoke後にnullを代入して確実にメモリ解放
+      if (recordedBlobUrl) {
+        URL.revokeObjectURL(recordedBlobUrl);
+        recordedBlobUrl = null;
+      }
 
       playback.pause();
       playback.style.display = 'none';
@@ -277,10 +281,18 @@
       startMotionDetection();
     }
 
+    // 修正2: resetToStandby の順番を最適化し、非同期onstopの割り込みを完全に防ぐ
     function resetToStandby() {
+      clearAllTimers();
+
+      if (currentState === STATE.RECORDING) {
+        currentState = STATE.STANDBY;
+      }
+
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
       }
+
       setStandbyState();
     }
 
@@ -324,7 +336,6 @@
           }
           prevFrameData = currentFrame;
         }
-        // 精度最高・ブレなしのフルスピード（約60fps）で検知
         requestAnimationFrame(checkMotion);
       }
       requestAnimationFrame(checkMotion);
@@ -393,7 +404,8 @@
       progressBarContainer.style.display = 'block';
       progressBar.style.backgroundColor = '#ff3366';
 
-      setTimeout(() => {
+      // 修正1: アニメーションタイマーも変数で管理
+      recAnimTimer = setTimeout(() => {
         if (currentState === STATE.RECORDING) {
           progressBar.style.transitionDuration = `${recordDuration}s`;
           progressBar.classList.add('animate-rec');
@@ -420,7 +432,6 @@
       mediaRecorder.onstop = () => {
         recIndicator.style.display = 'none';
         resetProgressBar();
-        // RECORDING状態のまま正常終了した場合のみ移行
         if (currentState === STATE.RECORDING) {
           startMoveDelayPhase();
         }
