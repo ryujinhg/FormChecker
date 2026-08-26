@@ -114,40 +114,44 @@
   </div>
 
   <script>
-    let recordDuration = 1.3, moveDelay = 3.0;
+// 1. 設定の読み込み
+    let recordDuration = parseFloat(localStorage.getItem('formchecker_rec')) || 1.3;
+    let moveDelay      = parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
+    let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex')) || 2;
+    let motionThreshold= parseFloat(localStorage.getItem('formchecker_sensitivity')) || 0.15;
+
     const speedOptions = [0.1, 0.2, 0.25, 0.5, 1.0];
-    let speedIndex = 2;
-    let motionThreshold = 0.15; // 検知閾値の初期値
 
-    const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
-    let currentState = STATE.INIT;
-    let readyTimeoutTimer = null;
+    // 2. 画面読み込み時に表示を合わせる
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
+      document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
+      document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
+      document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
+    });
 
-    const webcam = document.getElementById('webcam');
-    const playback = document.getElementById('playback');
-    const motionCanvas = document.getElementById('motionCanvas');
-    const motionCtx = motionCanvas.getContext('2d', { willReadFrequently: true });
-    const motionZoneText = document.getElementById('motionZoneText');
-    const countdownOverlay = document.getElementById('countdownOverlay');
-    const recIndicator = document.getElementById('recIndicator');
-    const mainBtn = document.getElementById('mainBtn');
-    const statusText = document.getElementById('statusText');
-    const statusSub = document.getElementById('statusSub');
-
-    let mediaStream = null, mediaRecorder = null, recordedChunks = [];
-    let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
-
+    // 3. 変更時に保存する関数
     function adjustSetting(type, delta) {
       if (type === 'rec') {
         recordDuration = Math.max(0.5, Math.min(5.0, parseFloat((recordDuration + delta).toFixed(1))));
         document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
+        localStorage.setItem('formchecker_rec', recordDuration);
       } else if (type === 'move') {
         moveDelay = Math.max(0.5, Math.min(10.0, parseFloat((moveDelay + delta).toFixed(1))));
         document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
+        localStorage.setItem('formchecker_move', moveDelay);
       } else if (type === 'sensitivity') {
         motionThreshold = Math.max(0.05, Math.min(0.50, parseFloat((motionThreshold + delta).toFixed(2))));
         document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
+        localStorage.setItem('formchecker_sensitivity', motionThreshold);
       }
+    }
+
+    function toggleSpeed(dir) {
+      speedIndex = (speedIndex + dir + speedOptions.length) % speedOptions.length;
+      document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
+      if (currentState === STATE.PLAYBACK) playback.playbackRate = speedOptions[speedIndex];
+      localStorage.setItem('formchecker_speedIndex', speedIndex);
     }
 
     function toggleSpeed(dir) {
