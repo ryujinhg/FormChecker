@@ -136,12 +136,15 @@
     const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
     let currentState = STATE.INIT;
 
-    // タイマー保持用（修正1: プログレスバーアニメ用タイマーも追加）
+    // タイマー保持用
     let readyTimeoutTimer   = null;
     let countdownInterval   = null;
     let recTimeoutTimer     = null;
     let recAnimTimer        = null;
     let moveIntervalTimer   = null;
+
+    // モーション検知ループ管理用ID
+    let motionFrameId       = null;
 
     const webcam = document.getElementById('webcam');
     const playback = document.getElementById('playback');
@@ -241,7 +244,6 @@
       progressBarContainer.style.display = 'none';
     }
 
-    // 修正1: recAnimTimer もクリア対象に追加
     function clearAllTimers() {
       if (readyTimeoutTimer) { clearTimeout(readyTimeoutTimer); readyTimeoutTimer = null; }
       if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
@@ -250,11 +252,22 @@
       if (moveIntervalTimer) { clearInterval(moveIntervalTimer); moveIntervalTimer = null; }
     }
 
+    // モーション検知ループを安全に停止
+    function stopMotionDetection() {
+      if (motionFrameId !== null) {
+        cancelAnimationFrame(motionFrameId);
+        motionFrameId = null;
+      }
+    }
+
     function setStandbyState() {
       currentState = STATE.STANDBY;
       clearAllTimers();
+      stopMotionDetection();
 
-      // 修正3: revoke後にnullを代入して確実にメモリ解放
+      // フレーム差分データのリセット（復帰直後の誤検知防止）
+      prevFrameData = null;
+
       if (recordedBlobUrl) {
         URL.revokeObjectURL(recordedBlobUrl);
         recordedBlobUrl = null;
@@ -281,7 +294,6 @@
       startMotionDetection();
     }
 
-    // 修正2: resetToStandby の順番を最適化し、非同期onstopの割り込みを完全に防ぐ
     function resetToStandby() {
       clearAllTimers();
 
@@ -297,8 +309,13 @@
     }
 
     function startMotionDetection() {
+      stopMotionDetection(); // 二重起動防止
+
       function checkMotion() {
-        if (currentState !== STATE.STANDBY && currentState !== STATE.READY && currentState !== STATE.PLAYBACK) return;
+        if (currentState !== STATE.STANDBY && currentState !== STATE.READY && currentState !== STATE.PLAYBACK) {
+          motionFrameId = null;
+          return;
+        }
 
         if (webcam.readyState === webcam.HAVE_ENOUGH_DATA) {
           motionCtx.drawImage(webcam, 0, 0, motionCanvas.width, motionCanvas.height);
@@ -336,9 +353,9 @@
           }
           prevFrameData = currentFrame;
         }
-        requestAnimationFrame(checkMotion);
+        motionFrameId = requestAnimationFrame(checkMotion);
       }
-      requestAnimationFrame(checkMotion);
+      motionFrameId = requestAnimationFrame(checkMotion);
     }
 
     function setReadyState() {
@@ -367,6 +384,7 @@
     function startCountdownSequence() {
       currentState = STATE.COUNTDOWN;
       clearAllTimers();
+      stopMotionDetection(); // カウントダウン中は検知停止
       motionZoneText.style.display = 'none';
 
       statusText.innerText = 'カウントダウン中...';
@@ -404,7 +422,6 @@
       progressBarContainer.style.display = 'block';
       progressBar.style.backgroundColor = '#ff3366';
 
-      // 修正1: アニメーションタイマーも変数で管理
       recAnimTimer = setTimeout(() => {
         if (currentState === STATE.RECORDING) {
           progressBar.style.transitionDuration = `${recordDuration}s`;
@@ -432,7 +449,11 @@
       mediaRecorder.onstop = () => {
         recIndicator.style.display = 'none';
         resetProgressBar();
-        if (currentState === STATE.RECORDING) {
+
+        const wasRecording = currentState === STATE.RECORDING;
+        mediaRecorder = null; // メモリ明示的解放
+
+        if (wasRecording) {
           startMoveDelayPhase();
         }
       };
