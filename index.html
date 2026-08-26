@@ -6,7 +6,7 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-  <link rel="manifest" href="manifest.json?v=1.0.4">
+  <link rel="manifest" href="manifest.json?v=3">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
@@ -37,6 +37,10 @@
 
     .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
     .countdown-overlay.show { opacity: 1; }
+
+    /* ★ 追加: プログレスバーのスタイル */
+    .progress-bar-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 6px; background: rgba(255, 255, 255, 0.25); z-index: 25; display: none; }
+    .progress-bar { width: 0%; height: 100%; background: #ff3366; transition: width 0.05s linear; }
 
     .controls-panel { width: 100%; max-width: 500px; background: #1e1e1e; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
     .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
@@ -72,6 +76,11 @@
     <div id="motionZoneText" class="motion-zone-text" style="display:none;">MOTION DETECTION</div>
 
     <div id="countdownOverlay" class="countdown-overlay">3</div>
+
+    <!-- ★ 追加: 下部プログレスバー -->
+    <div id="progressBarContainer" class="progress-bar-container">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
   </div>
 
   <div class="controls-panel">
@@ -102,7 +111,6 @@
       </div>
     </div>
 
-    <!-- 再生速度の下に追加した「検知感度（閾値）」の行 -->
     <div class="setting-row">
       <span class="setting-label">検知感度</span>
       <div class="stepper">
@@ -114,7 +122,7 @@
   </div>
 
   <script>
-    // 1. 設定の読み込み（保存値を取り出し、無ければデフォルト値）
+    // 1. 設定の読み込み
     let recordDuration = parseFloat(localStorage.getItem('formchecker_rec')) || 1.8;
     let moveDelay      = parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
     let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex')) || 2;
@@ -122,7 +130,6 @@
 
     const speedOptions = [0.1, 0.2, 0.25, 0.5, 1.0];
 
-    // アプリの状態管理変数
     const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
     let currentState = STATE.INIT;
     let readyTimeoutTimer = null;
@@ -137,11 +144,14 @@
     const mainBtn = document.getElementById('mainBtn');
     const statusText = document.getElementById('statusText');
     const statusSub = document.getElementById('statusSub');
+    const progressBarContainer = document.getElementById('progressBarContainer');
+    const progressBar = document.getElementById('progressBar');
 
     let mediaStream = null, mediaRecorder = null, recordedChunks = [];
     let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
+    let recAnimFrame = null;
 
-    // 2. 画面読み込み時に表示を保存値に合わせる
+    // 2. 画面読み込み時に表示を合わせる
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
       document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
@@ -173,7 +183,6 @@
       localStorage.setItem('formchecker_speedIndex', speedIndex);
     }
 
-    // 英語発声対応
     function speak(text, lang = 'en-US') {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -222,6 +231,7 @@
     function setStandbyState() {
       currentState = STATE.STANDBY;
       clearTimeout(readyTimeoutTimer);
+      cancelAnimationFrame(recAnimFrame);
       if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
 
       playback.pause();
@@ -229,6 +239,7 @@
       webcam.style.display = 'block';
 
       recIndicator.style.display = 'none';
+      progressBarContainer.style.display = 'none'; // バー非表示
       motionZoneText.style.display = 'block';
       motionZoneText.classList.remove('ready');
       motionZoneText.innerText = 'MOTION DETECTION';
@@ -351,6 +362,26 @@
       statusText.style.color = '#ff3366';
       recIndicator.style.display = 'flex';
 
+      // ★ 録画中バーの設定（赤色）
+      progressBarContainer.style.display = 'block';
+      progressBar.style.backgroundColor = '#ff3366';
+      progressBar.style.width = '0%';
+
+      const startTime = Date.now();
+      const totalDurationMs = recordDuration * 1000;
+
+      function updateRecProgress() {
+        if (currentState !== STATE.RECORDING) return;
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min((elapsed / totalDurationMs) * 100, 100);
+        progressBar.style.width = progress + '%';
+
+        if (elapsed < totalDurationMs) {
+          recAnimFrame = requestAnimationFrame(updateRecProgress);
+        }
+      }
+      recAnimFrame = requestAnimationFrame(updateRecProgress);
+
       let options = {};
       if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
         options = { mimeType: 'video/webm;codecs=vp8' };
@@ -370,6 +401,7 @@
 
       mediaRecorder.onstop = () => {
         recIndicator.style.display = 'none';
+        progressBarContainer.style.display = 'none'; // 録画完了でバー非表示
         startMoveDelayPhase();
       };
 
@@ -379,7 +411,7 @@
         if (mediaRecorder && mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
         }
-      }, recordDuration * 1000);
+      }, totalDurationMs);
     }
 
     function startMoveDelayPhase() {
@@ -387,6 +419,7 @@
 
       statusText.innerText = '画像確認待機中...';
       statusText.style.color = '#00d2ff';
+      progressBarContainer.style.display = 'none';
 
       let timeLeft = moveDelay;
       countdownOverlay.innerText = Math.ceil(timeLeft);
@@ -416,6 +449,18 @@
 
       webcam.style.display = 'none';
       playback.style.display = 'block';
+
+      // ★ 再生中バーの設定（緑色）
+      progressBarContainer.style.display = 'block';
+      progressBar.style.backgroundColor = '#00ff66';
+      progressBar.style.width = '0%';
+
+      playback.ontimeupdate = () => {
+        if (playback.duration) {
+          const progress = (playback.currentTime / playback.duration) * 100;
+          progressBar.style.width = progress + '%';
+        }
+      };
 
       playback.play().then(() => {
         statusText.innerText = `スロー再生中 (${speedOptions[speedIndex]}x)`;
