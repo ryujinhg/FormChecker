@@ -6,7 +6,7 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-  <link rel="manifest" href="manifest.json?v=3">
+  <link rel="manifest" href="manifest.json?v=5">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
@@ -31,23 +31,23 @@
     .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
     @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
 
-    /* 文字のみのシンプルな表示 */
     .motion-zone-text { position: absolute; top: 12px; right: 12px; font-weight: bold; font-size: 0.85rem; color: #ffd700; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 10; letter-spacing: 0.5px; }
     .motion-zone-text.ready { color: #ff00ff; }
 
     .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
     .countdown-overlay.show { opacity: 1; }
 
-    /* ★ 追加: プログレスバーのスタイル */
-    .progress-bar-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 6px; background: rgba(255, 255, 255, 0.25); z-index: 25; display: none; }
-    .progress-bar { width: 0%; height: 100%; background: #ff3366; transition: width 0.05s linear; }
-
-    .controls-panel { width: 100%; max-width: 500px; background: #1e1e1e; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-    .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
-    .setting-label { font-size: 0.9rem; font-weight: bold; }
-    .stepper { display: flex; align-items: center; gap: 6px; }
-    .btn-step { width: 40px; height: 40px; border-radius: 8px; border: none; background: #3a3a3c; color: #fff; font-size: 1.3rem; font-weight: bold; cursor: pointer; }
-    .value-display { font-size: 1rem; font-weight: bold; color: #00d2ff; min-width: 55px; text-align: center; }
+    /* ★ 修正: プログレスバーの領域 */
+    .progress-bar-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 5px; background: rgba(255, 255, 255, 0.2); z-index: 25; display: none; }
+    
+    /* ★ 修正: バー自体（JSで毎フレーム書き換えず、CSSのアニメーションで滑らかに動かす） */
+    .progress-bar { width: 0%; height: 100%; background: #ff3366; }
+    .progress-bar.animate-rec {
+      width: 100%;
+      /* transition時間とタイミング関数をCSSで直接処理（JS非依存） */
+      transition-property: width;
+      transition-timing-function: linear;
+    }
   </style>
 </head>
 <body>
@@ -72,12 +72,10 @@
       <div class="rec-dot"></div> REC
     </div>
 
-    <!-- シンプルなテキストのみ表示 -->
     <div id="motionZoneText" class="motion-zone-text" style="display:none;">MOTION DETECTION</div>
 
     <div id="countdownOverlay" class="countdown-overlay">3</div>
 
-    <!-- ★ 追加: 下部プログレスバー -->
     <div id="progressBarContainer" class="progress-bar-container">
       <div id="progressBar" class="progress-bar"></div>
     </div>
@@ -122,7 +120,6 @@
   </div>
 
   <script>
-    // 1. 設定の読み込み
     let recordDuration = parseFloat(localStorage.getItem('formchecker_rec')) || 1.8;
     let moveDelay      = parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
     let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex')) || 2;
@@ -149,9 +146,7 @@
 
     let mediaStream = null, mediaRecorder = null, recordedChunks = [];
     let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
-    let recAnimFrame = null;
 
-    // 2. 画面読み込み時に表示を合わせる
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
       document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
@@ -159,7 +154,6 @@
       document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
     });
 
-    // 3. 変更時に保存する関数
     function adjustSetting(type, delta) {
       if (type === 'rec') {
         recordDuration = Math.max(0.5, Math.min(5.0, parseFloat((recordDuration + delta).toFixed(1))));
@@ -228,10 +222,16 @@
       }
     }
 
+    function resetProgressBar() {
+      progressBar.style.transitionDuration = '0s';
+      progressBar.classList.remove('animate-rec');
+      progressBar.style.width = '0%';
+      progressBarContainer.style.display = 'none';
+    }
+
     function setStandbyState() {
       currentState = STATE.STANDBY;
       clearTimeout(readyTimeoutTimer);
-      cancelAnimationFrame(recAnimFrame);
       if (recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
 
       playback.pause();
@@ -239,7 +239,8 @@
       webcam.style.display = 'block';
 
       recIndicator.style.display = 'none';
-      progressBarContainer.style.display = 'none'; // バー非表示
+      resetProgressBar();
+
       motionZoneText.style.display = 'block';
       motionZoneText.classList.remove('ready');
       motionZoneText.innerText = 'MOTION DETECTION';
@@ -362,25 +363,18 @@
       statusText.style.color = '#ff3366';
       recIndicator.style.display = 'flex';
 
-      // ★ 録画中バーの設定（赤色）
+      // ★ 修正: CSSアニメーションで負荷ゼロでバーを伸ばす
+      resetProgressBar();
       progressBarContainer.style.display = 'block';
       progressBar.style.backgroundColor = '#ff3366';
-      progressBar.style.width = '0%';
 
-      const startTime = Date.now();
-      const totalDurationMs = recordDuration * 1000;
-
-      function updateRecProgress() {
-        if (currentState !== STATE.RECORDING) return;
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min((elapsed / totalDurationMs) * 100, 100);
-        progressBar.style.width = progress + '%';
-
-        if (elapsed < totalDurationMs) {
-          recAnimFrame = requestAnimationFrame(updateRecProgress);
+      // 1ミリ秒後にアニメーションを開始させる（リセットを即時適用するため）
+      setTimeout(() => {
+        if (currentState === STATE.RECORDING) {
+          progressBar.style.transitionDuration = `${recordDuration}s`;
+          progressBar.classList.add('animate-rec');
         }
-      }
-      recAnimFrame = requestAnimationFrame(updateRecProgress);
+      }, 10);
 
       let options = {};
       if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
@@ -401,7 +395,7 @@
 
       mediaRecorder.onstop = () => {
         recIndicator.style.display = 'none';
-        progressBarContainer.style.display = 'none'; // 録画完了でバー非表示
+        resetProgressBar();
         startMoveDelayPhase();
       };
 
@@ -411,7 +405,7 @@
         if (mediaRecorder && mediaRecorder.state === 'recording') {
           mediaRecorder.stop();
         }
-      }, totalDurationMs);
+      }, recordDuration * 1000);
     }
 
     function startMoveDelayPhase() {
@@ -419,7 +413,7 @@
 
       statusText.innerText = '画像確認待機中...';
       statusText.style.color = '#00d2ff';
-      progressBarContainer.style.display = 'none';
+      resetProgressBar();
 
       let timeLeft = moveDelay;
       countdownOverlay.innerText = Math.ceil(timeLeft);
@@ -450,10 +444,10 @@
       webcam.style.display = 'none';
       playback.style.display = 'block';
 
-      // ★ 再生中バーの設定（緑色）
+      // ★ 修正: 再生時のバー設定
+      resetProgressBar();
       progressBarContainer.style.display = 'block';
       progressBar.style.backgroundColor = '#00ff66';
-      progressBar.style.width = '0%';
 
       playback.ontimeupdate = () => {
         if (playback.duration) {
@@ -477,7 +471,6 @@
       });
     }
 
-    // Service Workerの登録と自動更新処理
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js').then((registration) => {
