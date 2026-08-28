@@ -6,217 +6,229 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-  <link rel="manifest" href="manifest.json?v=2.02">
+  <link rel="manifest" href="manifest.json?v=2.01">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-  
-  html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden; /* 画面全体のスクロールを防止してアプリ感を高める */
-  }
-
-  body {
-    font-family: -apple-system, sans-serif;
-    background-color: #121212;
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-  }
-
-  header { width: 100%; text-align: center; padding: 4px 0; flex-shrink: 0; }
-  h1 { font-size: 1.2rem; color: #4da6ff; letter-spacing: 1px; }
-
-  /* アプリ全体のメインコンテナ（デフォルトは縦並び） */
-  .app-container {
-    width: 100%;
-    max-width: 600px; /* スマホ縦向き時の見やすさ維持 */
-    height: calc(100% - 35px);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .status-banner {
-    width: 100%;
-    background: #1e1e1e;
-    border: 2px solid #333;
-    border-radius: 12px;
-    padding: 8px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  .status-text { font-size: 1.1rem; font-weight: bold; color: #00ffcc; }
-  .status-sub { font-size: 0.8rem; color: #aaa; }
-
-  .btn-top-action { width: 100%; padding: 10px; font-size: 1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
-  .btn-start { background: #007bff; color: white; }
-  .btn-reset { background: #3a3a3c; color: #bbb; }
-
-  /* 映像エリア：画面に合わせて拡大 */
-  .video-container {
-    position: relative;
-    width: 100%;
-    flex: 1; /* 余った高さをフルに使う */
-    min-height: 0; /* flex崩れ防止 */
-    background: #000;
-    border-radius: 16px;
-    overflow: hidden;
-  }
-  video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; } /* アスペクト比を維持して最大表示 */
-
-  .rec-indicator { position: absolute; top: 12px; left: 12px; background: rgba(255, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; display: none; align-items: center; gap: 6px; z-index: 15; }
-  .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
-  @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
-
-  .motion-zone-text { position: absolute; top: 12px; right: 12px; font-weight: bold; font-size: 0.85rem; color: #ffd700; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 10; letter-spacing: 0.5px; }
-  .motion-zone-text.ready { color: #ff00ff; }
-
-  .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
-  .countdown-overlay.show { opacity: 1; }
-
-  .progress-bar-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 5px; background: rgba(255, 255, 255, 0.2); z-index: 25; display: none; }
-  .progress-bar { width: 0%; height: 100%; background: #ff3366; }
-  .progress-bar.animate-rec { width: 100%; transition-property: width; transition-timing-function: linear; }
-
-  .controls-panel {
-    width: 100%;
-    background: #1e1e1e;
-    border-radius: 14px;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
-  .setting-label { font-size: 0.85rem; font-weight: bold; }
-  .stepper { display: flex; align-items: center; gap: 6px; }
-  .btn-step { width: 36px; height: 36px; border-radius: 8px; border: none; background: #3a3a3c; color: #fff; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
-  .btn-step:active { background: #555; }
-  .value-display { font-size: 0.95rem; font-weight: bold; color: #00d2ff; min-width: 50px; text-align: center; }
-
-  /* --------------------------------------------------
-     【大画面・横向き（タブレット / PC / 横持ち）用レイアウト】
-     -------------------------------------------------- */
-  @media (min-aspect-ratio: 1/1) {
-    .app-container {
-      max-width: none; /* 幅制限を解除 */
-      flex-direction: row; /* 左右2カラムに変更 */
-    }
-
-    /* 左側：映像エリア（画面いっぱいに巨大化） */
-    .video-container {
-      flex: 1;
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    
+    html, body {
+      width: 100%;
       height: 100%;
+      overflow-x: hidden; /* 横スクロール防止 */
+      background-color: #121212;
+      color: #fff;
+      font-family: -apple-system, sans-serif;
     }
 
-    /* 右側：操作パネルエリア（右側に縦に並べる） */
-    .side-panel {
-      width: 320px; /* 右側パネルの固定幅 */
+    body {
       display: flex;
       flex-direction: column;
+      align-items: center;
+      padding: 1.5%;
       gap: 8px;
-      overflow-y: auto; /* 万が一入りきらない場合用 */
     }
-  }
-</style>
+
+    /* 1. 最上部：ヘッダー */
+    header { 
+      width: 100%; 
+      text-align: center; 
+      flex-shrink: 0; 
+    }
+    h1 { 
+      font-size: 1.2rem; 
+      color: #4da6ff; 
+      letter-spacing: 1px; 
+    }
+
+    /* 2. タイトル直下：ステータス＆メインボタン */
+    .status-banner {
+      width: 100%;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0; /* 上部に固定 */
+    }
+    .status-text { font-size: 1.05rem; font-weight: bold; color: #00ffcc; }
+    .status-sub { font-size: 0.75rem; color: #aaa; }
+
+    .btn-top-action { 
+      width: 100%; 
+      padding: 10px; 
+      font-size: 1rem; 
+      font-weight: bold; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      transition: background 0.2s; 
+    }
+    .btn-start { background: #007bff; color: white; }
+    .btn-reset { background: #3a3a3c; color: #bbb; }
+
+    /* 3. 中央：メイン映像エリア（画面の余白を最大限に占有） */
+    .video-container {
+      position: relative;
+      width: 100%;
+      flex: 1; /* 余った画面高さをフル活用 */
+      min-height: 40vh;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* 黒帯を完全排除し、枠いっぱいに拡大表示 */
+    video, canvas { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+    }
+
+    .rec-indicator { position: absolute; top: 10px; left: 10px; background: rgba(255, 0, 0, 0.8); color: white; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; display: none; align-items: center; gap: 6px; z-index: 15; }
+    .rec-dot { width: 8px; height: 8px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
+    @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
+
+    .motion-zone-text { position: absolute; top: 10px; right: 10px; font-weight: bold; font-size: 0.8rem; color: #ffd700; background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 10; letter-spacing: 0.5px; }
+    .motion-zone-text.ready { color: #ff00ff; }
+
+    .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
+    .countdown-overlay.show { opacity: 1; }
+
+    .progress-bar-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 6px; background: rgba(255, 255, 255, 0.2); z-index: 25; display: none; }
+    .progress-bar { width: 0%; height: 100%; background: #ff3366; }
+    .progress-bar.animate-rec { width: 100%; transition-property: width; transition-timing-function: linear; }
+
+    /* 4. 最下部：設定パネル（間隔・余白を最適化） */
+    .controls-panel {
+      width: 100%;
+      background: #1e1e1e;
+      border-radius: 10px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .setting-row { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      background: #2a2a2a; 
+      padding: 4px 10px; 
+      border-radius: 6px; 
+    }
+    .setting-label { font-size: 0.85rem; font-weight: bold; white-space: nowrap; }
+    .stepper { display: flex; align-items: center; gap: 8px; }
+    .btn-step { width: 36px; height: 36px; border-radius: 6px; border: none; background: #3a3a3c; color: #fff; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+    .btn-step:active { background: #555; }
+    .value-display { font-size: 0.9rem; font-weight: bold; color: #00d2ff; min-width: 52px; text-align: center; }
+
+    /* 横画面（タブレット・スマホ横持ち）の余白調整 */
+    @media (min-aspect-ratio: 1/1) {
+      body {
+        padding: 0.5%;
+        gap: 4px;
+      }
+      .status-banner {
+        padding: 6px;
+      }
+      .btn-top-action {
+        padding: 6px;
+      }
+      .setting-row {
+        padding: 2px 8px;
+      }
+    }
+  </style>
 </head>
 <body>
 
+  <!-- ① タイトル -->
   <header><h1>FormChecker</h1></header>
 
-  <!-- ★ここから新設：画面全体をまとめるラッパー -->
-  <div class="app-container">
+  <!-- ② ボタン＆ステータス（タイトルのすぐ直下） -->
+  <div class="status-banner">
+    <button id="mainBtn" class="btn-top-action btn-start" onclick="handleMainButtonClick()">カメラを起動する</button>
+    <div>
+      <div id="statusText" class="status-text" style="display:none;"></div>
+      <div id="statusSub" class="status-sub">端末を固定してご利用ください</div>
+    </div>
+  </div>
 
-    <!-- 1. 映像エリア（横画面のときは左側へ） -->
-    <div class="video-container">
-      <video id="webcam" autoplay playsinline muted></video>
-      <video id="playback" loop playsinline muted style="display:none;"></video>
+  <!-- ③ メイン映像エリア（画面中央で広々と表示） -->
+  <div class="video-container">
+    <video id="webcam" autoplay playsinline muted></video>
+    <video id="playback" loop playsinline muted style="display:none;"></video>
 
-      <canvas id="motionCanvas" style="display:none;"></canvas>
+    <canvas id="motionCanvas" style="display:none;"></canvas>
 
-      <div id="recIndicator" class="rec-indicator">
-        <div class="rec-dot"></div> REC
-      </div>
+    <div id="recIndicator" class="rec-indicator">
+      <div class="rec-dot"></div> REC
+    </div>
 
-      <div id="motionZoneText" class="motion-zone-text" style="display:none;">MOTION DETECTION</div>
+    <div id="motionZoneText" class="motion-zone-text" style="display:none;">MOTION DETECTION</div>
 
-      <div id="countdownOverlay" class="countdown-overlay">3</div>
+    <div id="countdownOverlay" class="countdown-overlay">3</div>
 
-      <div id="progressBarContainer" class="progress-bar-container">
-        <div id="progressBar" class="progress-bar"></div>
+    <div id="progressBarContainer" class="progress-bar-container">
+      <div id="progressBar" class="progress-bar"></div>
+    </div>
+  </div>
+
+  <!-- ④ 設定パネル（最下部） -->
+  <div class="controls-panel">
+    <div class="setting-row">
+      <span class="setting-label">録画時間</span>
+      <div class="stepper">
+        <button class="btn-step" onclick="adjustSetting('rec', -0.1)">-</button>
+        <span id="recVal" class="value-display">1.8 秒</span>
+        <button class="btn-step" onclick="adjustSetting('rec', 0.1)">+</button>
       </div>
     </div>
 
-    <!-- ★ここから新設：右側パネル（ステータスと設定をひとまとめ） -->
-    <div class="side-panel">
-
-      <div class="status-banner">
-        <button id="mainBtn" class="btn-top-action btn-start" onclick="handleMainButtonClick()">カメラを起動する</button>
-        <div>
-          <div id="statusText" class="status-text" style="display:none;"></div>
-          <div id="statusSub" class="status-sub">端末を固定してご利用ください</div>
-        </div>
+    <div class="setting-row">
+      <span class="setting-label">移動待機時間</span>
+      <div class="stepper">
+        <button class="btn-step" onclick="adjustSetting('move', -0.5)">-</button>
+        <span id="moveVal" class="value-display">3.0 秒</span>
+        <button class="btn-step" onclick="adjustSetting('move', 0.5)">+</button>
       </div>
+    </div>
 
-      <div class="controls-panel">
-        <div class="setting-row">
-          <span class="setting-label">録画時間</span>
-          <div class="stepper">
-            <button class="btn-step" onclick="adjustSetting('rec', -0.1)">-</button>
-            <span id="recVal" class="value-display">1.8 秒</span>
-            <button class="btn-step" onclick="adjustSetting('rec', 0.1)">+</button>
-          </div>
-        </div>
-
-        <div class="setting-row">
-          <span class="setting-label">移動待機時間</span>
-          <div class="stepper">
-            <button class="btn-step" onclick="adjustSetting('move', -0.5)">-</button>
-            <span id="moveVal" class="value-display">3.0 秒</span>
-            <button class="btn-step" onclick="adjustSetting('move', 0.5)">+</button>
-          </div>
-        </div>
-
-        <div class="setting-row">
-          <span class="setting-label">再生速度</span>
-          <div class="stepper">
-            <button class="btn-step" onclick="toggleSpeed(-1)">&lt;</button>
-            <span id="speedVal" class="value-display">0.25x</span>
-            <button class="btn-step" onclick="toggleSpeed(1)">&gt;</button>
-          </div>
-        </div>
-
-        <div class="setting-row">
-          <span class="setting-label">検知レベル</span>
-          <div class="stepper">
-            <button class="btn-step" onclick="adjustSetting('sensitivity', -5)">-</button>
-            <span id="sensitivityVal" class="value-display">50</span>
-            <button class="btn-step" onclick="adjustSetting('sensitivity', 5)">+</button>
-          </div>
-        </div>
+    <div class="setting-row">
+      <span class="setting-label">再生速度</span>
+      <div class="stepper">
+        <button class="btn-step" onclick="toggleSpeed(-1)">&lt;</button>
+        <span id="speedVal" class="value-display">0.25x</span>
+        <button class="btn-step" onclick="toggleSpeed(1)">&gt;</button>
       </div>
+    </div>
 
-    </div> <!-- /.side-panel 終わり -->
+    <div class="setting-row">
+      <span class="setting-label">検知レベル</span>
+      <div class="stepper">
+        <button class="btn-step" onclick="adjustSetting('sensitivity', -5)">-</button>
+        <span id="sensitivityVal" class="value-display">50</span>
+        <button class="btn-step" onclick="adjustSetting('sensitivity', 5)">+</button>
+      </div>
+    </div>
+  </div>
 
-  </div> <!-- /.app-container 終わり -->
   <script>
     let recordDuration = parseFloat(localStorage.getItem('formchecker_rec')) || 1.8;
     let moveDelay      = parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
     let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex'), 10);
     if (isNaN(speedIndex)) speedIndex = 1;
 
-    // 0〜100の検知レベル（実用域に絞った新スケール）
     let motionLevel = parseInt(localStorage.getItem('formchecker_sensitivity'), 10);
     if (isNaN(motionLevel)) motionLevel = 50;
 
@@ -225,14 +237,11 @@
     const STATE = { INIT: 'INIT', STANDBY: 'STANDBY', READY: 'READY', COUNTDOWN: 'COUNTDOWN', RECORDING: 'RECORDING', MOVING: 'MOVING', PLAYBACK: 'PLAYBACK' };
     let currentState = STATE.INIT;
 
-    // タイマー保持用
     let readyTimeoutTimer   = null;
     let countdownInterval   = null;
     let recTimeoutTimer     = null;
     let recAnimTimer        = null;
     let moveIntervalTimer   = null;
-
-    // モーション検知ループ管理用ID
     let motionFrameId       = null;
 
     const webcam = document.getElementById('webcam');
@@ -251,10 +260,9 @@
     let mediaStream = null, mediaRecorder = null, recordedChunks = [];
     let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
 
-    // 【改良】実用域（旧40〜100）を 新0〜100 に再割り当てする変換関数
     function getMotionThreshold() {
-      const minThresh = 0.01; // レベル100：最高感度（超敏感）
-      const maxThresh = 0.30; // レベル0  ：最低感度（旧レベル40相当。大振りで反応）
+      const minThresh = 0.01;
+      const maxThresh = 0.30;
       return maxThresh - (motionLevel / 100) * (maxThresh - minThresh);
     }
 
