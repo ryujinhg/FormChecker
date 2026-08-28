@@ -284,76 +284,86 @@
     /* ========================================
        横画面
        ======================================== */
-    @media (min-aspect-ratio: 1/1) {
+@media (min-aspect-ratio: 1/1) {
 
-      body {
-        padding: 0.5%;
-        gap: 4px;
-      }
+  body {
+    padding: 0.5%;
+    gap: 4px;
+  }
 
-      .status-banner {
-        padding: 6px;
-      }
+  .status-banner {
+    padding: 6px;
+  }
 
-      .btn-top-action {
-        padding: 6px;
-      }
+  .btn-top-action {
+    padding: 6px;
+  }
 
-      /* 横画面では右側に操作パネルをまとめる */
-      header,
-      .status-banner,
-      .controls-panel {
-        width: 400px;
-        max-width: 40vw;
-        align-self: flex-end;
-      }
+  /* 横画面では右側に配置 */
+  header,
+  .status-banner,
+  .controls-panel {
+    align-self: flex-end;
+  }
 
-      /* 設定パネルを横長に */
-      .controls-panel {
-        padding: 8px;
-        gap: 4px;
-      }
+  header,
+  .status-banner {
+    width: 400px;
+    max-width: 42vw;
+  }
 
-      /* 各行のレイアウトを固定してガタつきを防止 */
-      .setting-row {
-        padding: 4px 8px;
-        display: grid;
-        grid-template-columns: 1fr 36px 62px 36px;
-        column-gap: 8px;
-        align-items: center;
-      }
+  /* 設定パネルは少し横長にする */
+  .controls-panel {
+    width: 480px;
+    max-width: 50vw;
+    padding: 8px;
+    gap: 4px;
+  }
 
-      .setting-label {
-        font-size: 0.9rem;
-        text-align: left;
-      }
+  /*
+   * 横画面の設定行
+   * ラベル | - | 数値 | +
+   */
+  .setting-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) 40px 70px 40px;
+    column-gap: 8px;
+    align-items: center;
+    padding: 4px 8px;
+  }
 
-      .stepper {
-        display: contents;
-      }
+  .setting-label {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    text-align: left;
+  }
 
-      .stepper .btn-step:first-child {
-        grid-column: 2;
-      }
+  .stepper {
+    display: contents;
+  }
 
-      .stepper .value-display {
-        grid-column: 3;
-      }
+  .stepper .btn-step:first-child {
+    grid-column: 2;
+  }
 
-      .stepper .btn-step:last-child {
-        grid-column: 4;
-      }
+  .stepper .value-display {
+    grid-column: 3;
+  }
 
-      .btn-step {
-        width: 36px;
-        height: 36px;
-      }
+  .stepper .btn-step:last-child {
+    grid-column: 4;
+  }
 
-      .value-display {
-        min-width: 62px;
-        width: 62px;
-      }
-    }
+  .btn-step {
+    width: 40px;
+    height: 36px;
+  }
+
+  .value-display {
+    width: 70px;
+    min-width: 70px;
+  }
+}
   </style>
 </head>
 
