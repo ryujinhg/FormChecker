@@ -6,7 +6,7 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-  <link rel="manifest" href="manifest.json?v=9">
+  <link rel="manifest" href="manifest.json?v=10">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
@@ -117,7 +117,7 @@
       <span class="setting-label">検知レベル</span>
       <div class="stepper">
         <button class="btn-step" onclick="adjustSetting('sensitivity', -5)">-</button>
-        <span id="sensitivityVal" class="value-display">70</span>
+        <span id="sensitivityVal" class="value-display">50</span>
         <button class="btn-step" onclick="adjustSetting('sensitivity', 5)">+</button>
       </div>
     </div>
@@ -129,9 +129,9 @@
     let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex'), 10);
     if (isNaN(speedIndex)) speedIndex = 1;
 
-    // 0〜100の検知レベル（デフォルトを70とする。旧0.15付近相当）
+    // 0〜100の検知レベル（実用域に絞った新スケール）
     let motionLevel = parseInt(localStorage.getItem('formchecker_sensitivity'), 10);
-    if (isNaN(motionLevel)) motionLevel = 70;
+    if (isNaN(motionLevel)) motionLevel = 50;
 
     const speedOptions = [0.15, 0.25, 0.5, 1.0];
 
@@ -164,12 +164,10 @@
     let mediaStream = null, mediaRecorder = null, recordedChunks = [];
     let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
 
-    // レベル（0〜100）から実際の判定用しきい値（0.50〜0.01）に変換する関数
-    // レベル100（最高感度） → 0.01（わずかな変化でも反応）
-    // レベル0（最低感度）   → 0.50（全く反応しない）
+    // 【改良】実用域（旧40〜100）を 新0〜100 に再割り当てする変換関数
     function getMotionThreshold() {
-      const minThresh = 0.01;
-      const maxThresh = 0.50;
+      const minThresh = 0.01; // レベル100：最高感度（超敏感）
+      const maxThresh = 0.30; // レベル0  ：最低感度（旧レベル40相当。大振りで反応）
       return maxThresh - (motionLevel / 100) * (maxThresh - minThresh);
     }
 
@@ -263,7 +261,6 @@
       if (moveIntervalTimer) { clearInterval(moveIntervalTimer); moveIntervalTimer = null; }
     }
 
-    // モーション検知ループを安全に停止
     function stopMotionDetection() {
       if (motionFrameId !== null) {
         cancelAnimationFrame(motionFrameId);
@@ -276,7 +273,6 @@
       clearAllTimers();
       stopMotionDetection();
 
-      // フレーム差分データのリセット（復帰直後の誤検知防止）
       prevFrameData = null;
 
       if (recordedBlobUrl) {
@@ -320,7 +316,7 @@
     }
 
     function startMotionDetection() {
-      stopMotionDetection(); // 二重起動防止
+      stopMotionDetection();
 
       function checkMotion() {
         if (currentState !== STATE.STANDBY && currentState !== STATE.READY && currentState !== STATE.PLAYBACK) {
@@ -395,7 +391,7 @@
     function startCountdownSequence() {
       currentState = STATE.COUNTDOWN;
       clearAllTimers();
-      stopMotionDetection(); // カウントダウン中は検知停止
+      stopMotionDetection();
       motionZoneText.style.display = 'none';
 
       statusText.innerText = 'カウントダウン中...';
@@ -462,7 +458,7 @@
         resetProgressBar();
 
         const wasRecording = currentState === STATE.RECORDING;
-        mediaRecorder = null; // メモリ明示的解放
+        mediaRecorder = null;
 
         if (wasRecording) {
           startMoveDelayPhase();
