@@ -6,7 +6,7 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-  <link rel="manifest" href="manifest.json?v=8">
+  <link rel="manifest" href="manifest.json?v=9">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
@@ -114,11 +114,11 @@
     </div>
 
     <div class="setting-row">
-      <span class="setting-label">検知感度</span>
+      <span class="setting-label">検知レベル</span>
       <div class="stepper">
-        <button class="btn-step" onclick="adjustSetting('sensitivity', -0.01)">-</button>
-        <span id="sensitivityVal" class="value-display">0.15</span>
-        <button class="btn-step" onclick="adjustSetting('sensitivity', 0.01)">+</button>
+        <button class="btn-step" onclick="adjustSetting('sensitivity', -5)">-</button>
+        <span id="sensitivityVal" class="value-display">70</span>
+        <button class="btn-step" onclick="adjustSetting('sensitivity', 5)">+</button>
       </div>
     </div>
   </div>
@@ -129,7 +129,9 @@
     let speedIndex     = parseInt(localStorage.getItem('formchecker_speedIndex'), 10);
     if (isNaN(speedIndex)) speedIndex = 1;
 
-    let motionThreshold= parseFloat(localStorage.getItem('formchecker_sensitivity')) || 0.15;
+    // 0〜100の検知レベル（デフォルトを70とする。旧0.15付近相当）
+    let motionLevel = parseInt(localStorage.getItem('formchecker_sensitivity'), 10);
+    if (isNaN(motionLevel)) motionLevel = 70;
 
     const speedOptions = [0.15, 0.25, 0.5, 1.0];
 
@@ -162,11 +164,20 @@
     let mediaStream = null, mediaRecorder = null, recordedChunks = [];
     let prevFrameData = null, ignoreMotionUntil = 0, recordedBlobUrl = null;
 
+    // レベル（0〜100）から実際の判定用しきい値（0.50〜0.01）に変換する関数
+    // レベル100（最高感度） → 0.01（わずかな変化でも反応）
+    // レベル0（最低感度）   → 0.50（全く反応しない）
+    function getMotionThreshold() {
+      const minThresh = 0.01;
+      const maxThresh = 0.50;
+      return maxThresh - (motionLevel / 100) * (maxThresh - minThresh);
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('recVal').innerText = recordDuration.toFixed(1) + ' 秒';
       document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
       document.getElementById('speedVal').innerText = speedOptions[speedIndex] + 'x';
-      document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
+      document.getElementById('sensitivityVal').innerText = motionLevel;
     });
 
     function adjustSetting(type, delta) {
@@ -179,9 +190,9 @@
         document.getElementById('moveVal').innerText = moveDelay.toFixed(1) + ' 秒';
         localStorage.setItem('formchecker_move', moveDelay);
       } else if (type === 'sensitivity') {
-        motionThreshold = Math.max(0.05, Math.min(0.50, parseFloat((motionThreshold + delta).toFixed(2))));
-        document.getElementById('sensitivityVal').innerText = motionThreshold.toFixed(2);
-        localStorage.setItem('formchecker_sensitivity', motionThreshold);
+        motionLevel = Math.max(0, Math.min(100, motionLevel + delta));
+        document.getElementById('sensitivityVal').innerText = motionLevel;
+        localStorage.setItem('formchecker_sensitivity', motionLevel);
       }
     }
 
@@ -338,7 +349,7 @@
 
             const motionRatio = diffCount / (roiW * roiH);
 
-            if (motionRatio > motionThreshold) {
+            if (motionRatio > getMotionThreshold()) {
               if (currentState === STATE.STANDBY) {
                 setReadyState();
                 return;
