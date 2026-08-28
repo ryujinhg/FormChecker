@@ -6,7 +6,7 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-  <link rel="manifest" href="manifest.json?v=2.1.5">
+  <link rel="manifest" href="manifest.json?v=2.1.4">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
@@ -19,10 +19,11 @@
       -webkit-user-select: none;
     }
 
-    html, body {
+    html,
+    body {
       width: 100%;
       height: 100%;
-      overflow-x: hidden;
+      overflow: hidden;
       background-color: #121212;
       color: #fff;
       font-family: -apple-system, sans-serif;
@@ -36,7 +37,10 @@
       gap: 8px;
     }
 
-    /* 1. 最上部：ヘッダー */
+    /* =========================================================
+       1. 最上部：ヘッダー
+       ========================================================= */
+
     header {
       width: 100%;
       text-align: center;
@@ -49,7 +53,10 @@
       letter-spacing: 1px;
     }
 
-    /* 2. タイトル直下：ステータス＆メインボタン */
+    /* =========================================================
+       2. ステータス＆メインボタン
+       ========================================================= */
+
     .status-banner {
       width: 100%;
       background: #1e1e1e;
@@ -96,7 +103,10 @@
       color: #bbb;
     }
 
-    /* 3. 中央：メイン映像エリア */
+    /* =========================================================
+       3. 中央：メイン映像エリア
+       ========================================================= */
+
     .video-container {
       position: relative;
       width: 100%;
@@ -216,7 +226,10 @@
       transition-timing-function: linear;
     }
 
-    /* 4. 最下部：設定パネル */
+    /* =========================================================
+       4. 設定パネル
+       ========================================================= */
+
     .controls-panel {
       width: 100%;
       background: #1e1e1e;
@@ -226,6 +239,14 @@
       flex-direction: column;
       gap: 4px;
       flex-shrink: 0;
+
+      /* READY以降で使用 */
+      transition: opacity 0.2s ease;
+    }
+
+    /* READYになったら非表示 */
+    .controls-panel.hidden {
+      display: none;
     }
 
     .setting-row {
@@ -259,7 +280,6 @@
       font-size: 1.1rem;
       font-weight: bold;
       cursor: pointer;
-      flex-shrink: 0;
     }
 
     .btn-step:active {
@@ -274,107 +294,261 @@
       text-align: center;
     }
 
-    /* ========================================
-       READY以降で設定パネルを隠すためのクラス
-       ======================================== */
-    .controls-panel.hidden {
-      display: none;
+    /* =========================================================
+       縦画面
+       ※ここは基本的に今まで通り
+       ========================================================= */
+
+    @media (max-aspect-ratio: 1/1) {
+
+      .controls-panel {
+        position: relative;
+        z-index: 30;
+      }
+
     }
 
-    /* ========================================
+    /* =========================================================
        横画面
-       ======================================== */
-@media (min-aspect-ratio: 1/1) {
+       
+       ★ここが今回の大改造部分
+       
+       映像を画面いっぱいにして、
+       UIを全部その上に浮かせる
+       ========================================================= */
 
-  body {
-    padding: 0.5%;
-    gap: 4px;
-  }
+    @media (min-aspect-ratio: 1/1) {
 
-  .status-banner {
-    padding: 6px;
-  }
+      body {
+        display: block;
+        padding: 0;
+        overflow: hidden;
+      }
 
-  .btn-top-action {
-    padding: 6px;
-  }
+      /* ---------------------------------------------------------
+         映像を完全に画面いっぱいへ
+         --------------------------------------------------------- */
 
-  /* 横画面では右側に配置 */
-  header,
-  .status-banner,
-  .controls-panel {
-    align-self: flex-end;
-  }
+      .video-container {
+        position: fixed;
+        inset: 0;
 
-  header,
-  .status-banner {
-    width: 400px;
-    max-width: 42vw;
-  }
+        width: 100vw;
+        height: 100dvh;
 
-  /* 設定パネルは少し横長にする */
-  .controls-panel {
-    width: 480px;
-    max-width: 50vw;
-    padding: 8px;
-    gap: 4px;
-  }
+        min-height: 0;
 
-  /*
-   * 横画面の設定行
-   * ラベル | - | 数値 | +
-   */
-  .setting-row {
-    display: grid;
-    grid-template-columns: minmax(150px, 1fr) 40px 70px 40px;
-    column-gap: 8px;
-    align-items: center;
-    padding: 4px 8px;
-  }
+        border-radius: 0;
 
-  .setting-label {
-    font-size: 0.9rem;
-    white-space: nowrap;
-    text-align: left;
-  }
+        z-index: 1;
+      }
 
-  .stepper {
-    display: contents;
-  }
+      video,
+      canvas {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
 
-  .stepper .btn-step:first-child {
-    grid-column: 2;
-  }
+      /* ---------------------------------------------------------
+         タイトル
+         --------------------------------------------------------- */
 
-  .stepper .value-display {
-    grid-column: 3;
-  }
+      header {
+        position: fixed;
 
-  .stepper .btn-step:last-child {
-    grid-column: 4;
-  }
+        top: 8px;
+        right: 1.5vw;
 
-  .btn-step {
-    width: 40px;
-    height: 36px;
-  }
+        width: 400px;
+        max-width: 42vw;
 
-  .value-display {
-    width: 70px;
-    min-width: 70px;
-  }
-}
+        z-index: 50;
+
+        text-align: center;
+
+        pointer-events: none;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+      }
+
+      /* ---------------------------------------------------------
+         上部ステータスパネル
+         --------------------------------------------------------- */
+
+      .status-banner {
+        position: fixed;
+
+        top: 48px;
+        right: 1.5vw;
+
+        width: 400px;
+        max-width: 42vw;
+
+        padding: 10px;
+
+        z-index: 50;
+
+        background: rgba(30, 30, 30, 0.94);
+        border: 1px solid #333;
+
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+      }
+
+      .btn-top-action {
+        padding: 8px;
+      }
+
+      .status-text {
+        font-size: 1.05rem;
+      }
+
+      .status-sub {
+        font-size: 0.8rem;
+      }
+
+      /* ---------------------------------------------------------
+         設定パネル
+         
+         ★映像の「下」ではなく
+         ★映像の「上」に浮かせる
+         --------------------------------------------------------- */
+
+      .controls-panel {
+        position: fixed;
+
+        right: 1.5vw;
+        bottom: 1.5vh;
+
+        width: 500px;
+        max-width: 48vw;
+
+        padding: 8px;
+
+        z-index: 50;
+
+        background: rgba(30, 30, 30, 0.94);
+
+        border: 1px solid #333;
+
+        border-radius: 12px;
+
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+        gap: 5px;
+      }
+
+      /* ---------------------------------------------------------
+         横画面の設定行
+         
+         ラベル | - | 数値 | +
+         
+         全行で同じ位置に固定
+         --------------------------------------------------------- */
+
+      .setting-row {
+        display: grid;
+
+        grid-template-columns:
+          minmax(170px, 1fr)
+          44px
+          80px
+          44px;
+
+        column-gap: 8px;
+
+        align-items: center;
+
+        min-height: 44px;
+
+        padding: 4px 8px;
+
+        border-radius: 7px;
+      }
+
+      .setting-label {
+        grid-column: 1;
+
+        font-size: 0.95rem;
+
+        white-space: nowrap;
+
+        text-align: left;
+      }
+
+      .stepper {
+        display: contents;
+      }
+
+      .stepper .btn-step:first-child {
+        grid-column: 2;
+      }
+
+      .stepper .value-display {
+        grid-column: 3;
+      }
+
+      .stepper .btn-step:last-child {
+        grid-column: 4;
+      }
+
+      .btn-step {
+        width: 44px;
+        height: 38px;
+
+        font-size: 1.1rem;
+      }
+
+      .value-display {
+        width: 80px;
+        min-width: 80px;
+
+        font-size: 0.95rem;
+
+        text-align: center;
+      }
+
+      /* ---------------------------------------------------------
+         横画面の各種オーバーレイ
+         --------------------------------------------------------- */
+
+      .rec-indicator {
+        top: 15px;
+        left: 15px;
+      }
+
+      .motion-zone-text {
+        top: 15px;
+        right: 15px;
+      }
+
+      .countdown-overlay {
+        font-size: 7rem;
+      }
+
+      .progress-bar-container {
+        height: 6px;
+      }
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- ① タイトル -->
+  <!-- =========================================================
+       ① タイトル
+       ========================================================= -->
+
   <header>
     <h1>FormChecker</h1>
   </header>
 
-  <!-- ② ボタン＆ステータス -->
+  <!-- =========================================================
+       ② ボタン＆ステータス
+       ========================================================= -->
+
   <div class="status-banner">
 
     <button
@@ -400,7 +574,10 @@
 
   </div>
 
-  <!-- ③ メイン映像エリア -->
+  <!-- =========================================================
+       ③ メイン映像エリア
+       ========================================================= -->
+
   <div class="video-container">
 
     <video
@@ -426,8 +603,10 @@
     <div
       id="recIndicator"
       class="rec-indicator">
+
       <div class="rec-dot"></div>
       REC
+
     </div>
 
     <div
@@ -446,23 +625,32 @@
     <div
       id="progressBarContainer"
       class="progress-bar-container">
+
       <div
         id="progressBar"
         class="progress-bar">
       </div>
+
     </div>
 
   </div>
 
-  <!-- ④ 設定パネル -->
+  <!-- =========================================================
+       ④ 設定パネル
+       ========================================================= -->
+
   <div
     id="controlsPanel"
     class="controls-panel">
 
     <div class="setting-row">
-      <span class="setting-label">録画時間</span>
+
+      <span class="setting-label">
+        録画時間
+      </span>
 
       <div class="stepper">
+
         <button
           class="btn-step"
           onclick="adjustSetting('rec', -0.1)">
@@ -480,13 +668,19 @@
           onclick="adjustSetting('rec', 0.1)">
           +
         </button>
+
       </div>
+
     </div>
 
     <div class="setting-row">
-      <span class="setting-label">移動待機時間</span>
+
+      <span class="setting-label">
+        移動待機時間
+      </span>
 
       <div class="stepper">
+
         <button
           class="btn-step"
           onclick="adjustSetting('move', -0.5)">
@@ -504,13 +698,19 @@
           onclick="adjustSetting('move', 0.5)">
           +
         </button>
+
       </div>
+
     </div>
 
     <div class="setting-row">
-      <span class="setting-label">再生速度</span>
+
+      <span class="setting-label">
+        再生速度
+      </span>
 
       <div class="stepper">
+
         <button
           class="btn-step"
           onclick="toggleSpeed(-1)">
@@ -528,13 +728,19 @@
           onclick="toggleSpeed(1)">
           &gt;
         </button>
+
       </div>
+
     </div>
 
     <div class="setting-row">
-      <span class="setting-label">検知レベル</span>
+
+      <span class="setting-label">
+        検知レベル
+      </span>
 
       <div class="stepper">
+
         <button
           class="btn-step"
           onclick="adjustSetting('sensitivity', -5)">
@@ -552,12 +758,22 @@
           onclick="adjustSetting('sensitivity', 5)">
           +
         </button>
+
       </div>
+
     </div>
 
   </div>
 
+  <!-- =========================================================
+       JavaScript
+       ========================================================= -->
+
   <script>
+
+    /* =========================================================
+       設定値
+       ========================================================= */
 
     let recordDuration =
       parseFloat(localStorage.getItem('formchecker_rec')) || 1.8;
@@ -566,20 +782,35 @@
       parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
 
     let speedIndex =
-      parseInt(localStorage.getItem('formchecker_speedIndex'), 10);
+      parseInt(
+        localStorage.getItem('formchecker_speedIndex'),
+        10
+      );
 
     if (isNaN(speedIndex)) {
       speedIndex = 1;
     }
 
     let motionLevel =
-      parseInt(localStorage.getItem('formchecker_sensitivity'), 10);
+      parseInt(
+        localStorage.getItem('formchecker_sensitivity'),
+        10
+      );
 
     if (isNaN(motionLevel)) {
       motionLevel = 50;
     }
 
-    const speedOptions = [0.15, 0.25, 0.5, 1.0];
+    const speedOptions = [
+      0.15,
+      0.25,
+      0.5,
+      1.0
+    ];
+
+    /* =========================================================
+       状態
+       ========================================================= */
 
     const STATE = {
       INIT: 'INIT',
@@ -593,6 +824,10 @@
 
     let currentState = STATE.INIT;
 
+    /* =========================================================
+       タイマー
+       ========================================================= */
+
     let readyTimeoutTimer = null;
     let countdownInterval = null;
     let recTimeoutTimer = null;
@@ -600,11 +835,24 @@
     let moveIntervalTimer = null;
     let motionFrameId = null;
 
-    const webcam = document.getElementById('webcam');
-    const playback = document.getElementById('playback');
-    const motionCanvas = document.getElementById('motionCanvas');
+    /* =========================================================
+       DOM
+       ========================================================= */
+
+    const webcam =
+      document.getElementById('webcam');
+
+    const playback =
+      document.getElementById('playback');
+
+    const motionCanvas =
+      document.getElementById('motionCanvas');
+
     const motionCtx =
-      motionCanvas.getContext('2d', { willReadFrequently: true });
+      motionCanvas.getContext(
+        '2d',
+        { willReadFrequently: true }
+      );
 
     const motionZoneText =
       document.getElementById('motionZoneText');
@@ -633,13 +881,22 @@
     const controlsPanel =
       document.getElementById('controlsPanel');
 
+    /* =========================================================
+       録画関連
+       ========================================================= */
+
     let mediaStream = null;
     let mediaRecorder = null;
     let recordedChunks = [];
+
     let prevFrameData = null;
     let ignoreMotionUntil = 0;
+
     let recordedBlobUrl = null;
 
+    /* =========================================================
+       検知レベル
+       ========================================================= */
 
     function getMotionThreshold() {
 
@@ -651,22 +908,32 @@
         (maxThresh - minThresh);
     }
 
+    /* =========================================================
+       初期表示
+       ========================================================= */
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener(
+      'DOMContentLoaded',
+      () => {
 
-      document.getElementById('recVal').innerText =
-        recordDuration.toFixed(1) + ' 秒';
+        document.getElementById('recVal').innerText =
+          recordDuration.toFixed(1) + ' 秒';
 
-      document.getElementById('moveVal').innerText =
-        moveDelay.toFixed(1) + ' 秒';
+        document.getElementById('moveVal').innerText =
+          moveDelay.toFixed(1) + ' 秒';
 
-      document.getElementById('speedVal').innerText =
-        speedOptions[speedIndex] + 'x';
+        document.getElementById('speedVal').innerText =
+          speedOptions[speedIndex] + 'x';
 
-      document.getElementById('sensitivityVal').innerText =
-        motionLevel;
-    });
+        document.getElementById('sensitivityVal').innerText =
+          motionLevel;
 
+      }
+    );
+
+    /* =========================================================
+       設定変更
+       ========================================================= */
 
     function adjustSetting(type, delta) {
 
@@ -691,7 +958,9 @@
           recordDuration
         );
 
-      } else if (type === 'move') {
+      }
+
+      else if (type === 'move') {
 
         moveDelay =
           Math.max(
@@ -712,7 +981,9 @@
           moveDelay
         );
 
-      } else if (type === 'sensitivity') {
+      }
+
+      else if (type === 'sensitivity') {
 
         motionLevel =
           Math.max(
@@ -723,8 +994,9 @@
             )
           );
 
-        document.getElementById('sensitivityVal').innerText =
-          motionLevel;
+        document.getElementById(
+          'sensitivityVal'
+        ).innerText = motionLevel;
 
         localStorage.setItem(
           'formchecker_sensitivity',
@@ -733,6 +1005,9 @@
       }
     }
 
+    /* =========================================================
+       再生速度
+       ========================================================= */
 
     function toggleSpeed(dir) {
 
@@ -740,10 +1015,14 @@
         (speedIndex + dir + speedOptions.length) %
         speedOptions.length;
 
-      document.getElementById('speedVal').innerText =
+      document.getElementById(
+        'speedVal'
+      ).innerText =
         speedOptions[speedIndex] + 'x';
 
-      if (currentState === STATE.PLAYBACK) {
+      if (
+        currentState === STATE.PLAYBACK
+      ) {
         playback.playbackRate =
           speedOptions[speedIndex];
       }
@@ -754,8 +1033,14 @@
       );
     }
 
+    /* =========================================================
+       音声
+       ========================================================= */
 
-    function speak(text, lang = 'en-US') {
+    function speak(
+      text,
+      lang = 'en-US'
+    ) {
 
       if ('speechSynthesis' in window) {
 
@@ -770,16 +1055,26 @@
       }
     }
 
+    /* =========================================================
+       メインボタン
+       ========================================================= */
 
     function handleMainButtonClick() {
 
       if (currentState === STATE.INIT) {
+
         initCamera();
+
       } else {
+
         resetToStandby();
+
       }
     }
 
+    /* =========================================================
+       カメラ起動
+       ========================================================= */
 
     async function initCamera() {
 
@@ -790,15 +1085,25 @@
 
             video: {
               facingMode: 'environment',
-              width: { ideal: 1920 },
-              height: { ideal: 1080 },
-              frameRate: { ideal: 60 }
+
+              width: {
+                ideal: 1920
+              },
+
+              height: {
+                ideal: 1080
+              },
+
+              frameRate: {
+                ideal: 60
+              }
             },
 
             audio: false
           });
 
-        webcam.srcObject = mediaStream;
+        webcam.srcObject =
+          mediaStream;
 
         await webcam.play();
 
@@ -818,7 +1123,9 @@
 
         setStandbyState();
 
-      } catch (err) {
+      }
+
+      catch (err) {
 
         alert(
           'カメラの起動に失敗しました。'
@@ -826,6 +1133,9 @@
       }
     }
 
+    /* =========================================================
+       プログレスバー
+       ========================================================= */
 
     function resetProgressBar() {
 
@@ -843,35 +1153,61 @@
         'none';
     }
 
+    /* =========================================================
+       タイマー全消去
+       ========================================================= */
 
     function clearAllTimers() {
 
       if (readyTimeoutTimer) {
-        clearTimeout(readyTimeoutTimer);
+
+        clearTimeout(
+          readyTimeoutTimer
+        );
+
         readyTimeoutTimer = null;
       }
 
       if (countdownInterval) {
-        clearInterval(countdownInterval);
+
+        clearInterval(
+          countdownInterval
+        );
+
         countdownInterval = null;
       }
 
       if (recTimeoutTimer) {
-        clearTimeout(recTimeoutTimer);
+
+        clearTimeout(
+          recTimeoutTimer
+        );
+
         recTimeoutTimer = null;
       }
 
       if (recAnimTimer) {
-        clearTimeout(recAnimTimer);
+
+        clearTimeout(
+          recAnimTimer
+        );
+
         recAnimTimer = null;
       }
 
       if (moveIntervalTimer) {
-        clearInterval(moveIntervalTimer);
+
+        clearInterval(
+          moveIntervalTimer
+        );
+
         moveIntervalTimer = null;
       }
     }
 
+    /* =========================================================
+       モーション検知停止
+       ========================================================= */
 
     function stopMotionDetection() {
 
@@ -885,19 +1221,26 @@
       }
     }
 
+    /* =========================================================
+       STANDBY
+       
+       ★ここで設定パネルを復活
+       ========================================================= */
 
     function setStandbyState() {
 
-      currentState = STATE.STANDBY;
+      currentState =
+        STATE.STANDBY;
 
       clearAllTimers();
-
       stopMotionDetection();
 
       prevFrameData = null;
 
-      /* STANDBYでは設定パネルを表示 */
-      controlsPanel.classList.remove('hidden');
+      /* 設定パネルを表示 */
+      controlsPanel.classList.remove(
+        'hidden'
+      );
 
       if (recordedBlobUrl) {
 
@@ -950,25 +1293,36 @@
       startMotionDetection();
     }
 
+    /* =========================================================
+       リセット
+       ========================================================= */
 
     function resetToStandby() {
 
       clearAllTimers();
 
-      if (currentState === STATE.RECORDING) {
-        currentState = STATE.STANDBY;
+      if (
+        currentState === STATE.RECORDING
+      ) {
+
+        currentState =
+          STATE.STANDBY;
       }
 
       if (
         mediaRecorder &&
         mediaRecorder.state !== 'inactive'
       ) {
+
         mediaRecorder.stop();
       }
 
       setStandbyState();
     }
 
+    /* =========================================================
+       モーション検知
+       ========================================================= */
 
     function startMotionDetection() {
 
@@ -1031,10 +1385,12 @@
                   currentFrame.data[i] -
                   prevFrameData.data[i]
                 ) +
+
                 Math.abs(
                   currentFrame.data[i + 1] -
                   prevFrameData.data[i + 1]
                 ) +
+
                 Math.abs(
                   currentFrame.data[i + 2] -
                   prevFrameData.data[i + 2]
@@ -1063,7 +1419,9 @@
 
                 return;
 
-              } else if (
+              }
+
+              else if (
                 currentState ===
                 STATE.READY
               ) {
@@ -1072,7 +1430,9 @@
 
                 return;
 
-              } else if (
+              }
+
+              else if (
                 currentState ===
                 STATE.PLAYBACK
               ) {
@@ -1100,14 +1460,20 @@
         );
     }
 
+    /* =========================================================
+       READY
+       
+       ★今回の重要ポイント
+       ★設定パネルだけ消す
+       ★上のUIは残す
+       ========================================================= */
 
     function setReadyState() {
 
-      currentState = STATE.READY;
+      currentState =
+        STATE.READY;
 
-      /*
-       * READYになったら設定パネルを隠す
-       */
+      /* 設定パネルだけ非表示 */
       controlsPanel.classList.add(
         'hidden'
       );
@@ -1154,6 +1520,9 @@
       startMotionDetection();
     }
 
+    /* =========================================================
+       カウントダウン
+       ========================================================= */
 
     function startCountdownSequence() {
 
@@ -1161,7 +1530,6 @@
         STATE.COUNTDOWN;
 
       clearAllTimers();
-
       stopMotionDetection();
 
       motionZoneText.style.display =
@@ -1198,6 +1566,7 @@
               count;
 
             if (count === 2) {
+
               speak(
                 'Two',
                 'en-US'
@@ -1205,13 +1574,16 @@
             }
 
             if (count === 1) {
+
               speak(
                 'One',
                 'en-US'
               );
             }
 
-          } else {
+          }
+
+          else {
 
             clearInterval(
               countdownInterval
@@ -1229,6 +1601,9 @@
         }, 1000);
     }
 
+    /* =========================================================
+       録画開始
+       ========================================================= */
 
     function startRecording() {
 
@@ -1285,7 +1660,9 @@
             'video/webm;codecs=vp8'
         };
 
-      } else if (
+      }
+
+      else if (
         MediaRecorder.isTypeSupported(
           'video/mp4'
         )
@@ -1305,7 +1682,9 @@
             options
           );
 
-      } catch (e) {
+      }
+
+      catch (e) {
 
         mediaRecorder =
           new MediaRecorder(
@@ -1327,7 +1706,6 @@
           }
         };
 
-
       mediaRecorder.onstop =
         () => {
 
@@ -1343,10 +1721,10 @@
           mediaRecorder = null;
 
           if (wasRecording) {
+
             startMoveDelayPhase();
           }
         };
-
 
       mediaRecorder.start(100);
 
@@ -1365,6 +1743,9 @@
         }, recordDuration * 1000);
     }
 
+    /* =========================================================
+       移動待機
+       ========================================================= */
 
     function startMoveDelayPhase() {
 
@@ -1399,7 +1780,9 @@
             countdownOverlay.innerText =
               Math.ceil(timeLeft);
 
-          } else {
+          }
+
+          else {
 
             clearInterval(
               moveIntervalTimer
@@ -1417,6 +1800,9 @@
         }, 500);
     }
 
+    /* =========================================================
+       再生
+       ========================================================= */
 
     function startPlaybackPhase() {
 
@@ -1430,7 +1816,9 @@
       const blob =
         new Blob(
           recordedChunks,
-          { type: mimeType }
+          {
+            type: mimeType
+          }
         );
 
       recordedBlobUrl =
@@ -1474,7 +1862,6 @@
           }
         };
 
-
       playback.play()
         .then(() => {
 
@@ -1506,47 +1893,57 @@
         });
     }
 
+    /* =========================================================
+       Service Worker
+       ========================================================= */
 
-    /* Service Worker */
-    if ('serviceWorker' in navigator) {
+    if (
+      'serviceWorker' in navigator
+    ) {
 
       window.addEventListener(
         'load',
         () => {
 
           navigator.serviceWorker
-            .register('service-worker.js')
-            .then((registration) => {
+            .register(
+              'service-worker.js'
+            )
+            .then(
+              (registration) => {
 
-              registration.onupdatefound =
-                () => {
+                registration.onupdatefound =
+                  () => {
 
-                  const installingWorker =
-                    registration.installing;
+                    const installingWorker =
+                      registration.installing;
 
-                  if (
-                    installingWorker != null
-                  ) {
+                    if (
+                      installingWorker != null
+                    ) {
 
-                    installingWorker.onstatechange =
-                      () => {
-
-                        if (
-                          installingWorker.state ===
-                          'installed'
-                        ) {
+                      installingWorker.onstatechange =
+                        () => {
 
                           if (
-                            navigator.serviceWorker.controller
+                            installingWorker.state ===
+                            'installed'
                           ) {
 
-                            window.location.reload();
+                            if (
+                              navigator
+                                .serviceWorker
+                                .controller
+                            ) {
+
+                              window.location.reload();
+                            }
                           }
-                        }
-                      };
-                  }
-                };
-            });
+                        };
+                    }
+                  };
+              }
+            );
         }
       );
     }
