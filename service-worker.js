@@ -1,5 +1,5 @@
 // ↓ 今後コードを変更して更新したい時は、この「v1」を「v2」「v3」に変更してください
-const CACHE_NAME = 'formchecker-cache-v9';
+const CACHE_NAME = 'formchecker-cache-v10';
 
 // キャッシュするファイルの一覧
 const FILES_TO_CACHE = [
