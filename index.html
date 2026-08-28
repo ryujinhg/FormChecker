@@ -10,119 +10,206 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
 
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-    body { font-family: -apple-system, sans-serif; background-color: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 10px; }
-    header { width: 100%; max-width: 500px; text-align: center; padding: 4px 0; }
-    h1 { font-size: 1.2rem; color: #4da6ff; letter-spacing: 1px; }
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* 画面全体のスクロールを防止してアプリ感を高める */
+  }
 
-    .status-banner { width: 100%; max-width: 500px; background: #1e1e1e; border: 2px solid #333; border-radius: 12px; padding: 10px; text-align: center; margin-bottom: 8px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .status-text { font-size: 1.2rem; font-weight: bold; color: #00ffcc; }
-    .status-sub { font-size: 0.85rem; color: #aaa; }
+  body {
+    font-family: -apple-system, sans-serif;
+    background-color: #121212;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+  }
 
-    .btn-top-action { width: 100%; padding: 12px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
-    .btn-start { background: #007bff; color: white; }
-    .btn-reset { background: #3a3a3c; color: #bbb; }
+  header { width: 100%; text-align: center; padding: 4px 0; flex-shrink: 0; }
+  h1 { font-size: 1.2rem; color: #4da6ff; letter-spacing: 1px; }
 
-    .video-container { position: relative; width: 100%; max-width: 500px; aspect-ratio: 3 / 4; background: #000; border-radius: 16px; overflow: hidden; margin-bottom: 10px; }
-    video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+  /* アプリ全体のメインコンテナ（デフォルトは縦並び） */
+  .app-container {
+    width: 100%;
+    max-width: 600px; /* スマホ縦向き時の見やすさ維持 */
+    height: calc(100% - 35px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 
-    .rec-indicator { position: absolute; top: 12px; left: 12px; background: rgba(255, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; display: none; align-items: center; gap: 6px; z-index: 15; }
-    .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
-    @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
+  .status-banner {
+    width: 100%;
+    background: #1e1e1e;
+    border: 2px solid #333;
+    border-radius: 12px;
+    padding: 8px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .status-text { font-size: 1.1rem; font-weight: bold; color: #00ffcc; }
+  .status-sub { font-size: 0.8rem; color: #aaa; }
 
-    .motion-zone-text { position: absolute; top: 12px; right: 12px; font-weight: bold; font-size: 0.85rem; color: #ffd700; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 10; letter-spacing: 0.5px; }
-    .motion-zone-text.ready { color: #ff00ff; }
+  .btn-top-action { width: 100%; padding: 10px; font-size: 1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+  .btn-start { background: #007bff; color: white; }
+  .btn-reset { background: #3a3a3c; color: #bbb; }
 
-    .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
-    .countdown-overlay.show { opacity: 1; }
+  /* 映像エリア：画面に合わせて拡大 */
+  .video-container {
+    position: relative;
+    width: 100%;
+    flex: 1; /* 余った高さをフルに使う */
+    min-height: 0; /* flex崩れ防止 */
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; } /* アスペクト比を維持して最大表示 */
 
-    .progress-bar-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 5px; background: rgba(255, 255, 255, 0.2); z-index: 25; display: none; }
-    .progress-bar { width: 0%; height: 100%; background: #ff3366; }
-    .progress-bar.animate-rec {
-      width: 100%;
-      transition-property: width;
-      transition-timing-function: linear;
+  .rec-indicator { position: absolute; top: 12px; left: 12px; background: rgba(255, 0, 0, 0.8); color: white; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; display: none; align-items: center; gap: 6px; z-index: 15; }
+  .rec-dot { width: 10px; height: 10px; background: white; border-radius: 50%; animation: blink 0.8s infinite alternate; }
+  @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
+
+  .motion-zone-text { position: absolute; top: 12px; right: 12px; font-weight: bold; font-size: 0.85rem; color: #ffd700; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 4px; pointer-events: none; z-index: 10; letter-spacing: 0.5px; }
+  .motion-zone-text.ready { color: #ff00ff; }
+
+  .countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 4.5rem; font-weight: 900; color: #ff3366; text-shadow: 0 0 20px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.2s ease; }
+  .countdown-overlay.show { opacity: 1; }
+
+  .progress-bar-container { position: absolute; bottom: 0; left: 0; width: 100%; height: 5px; background: rgba(255, 255, 255, 0.2); z-index: 25; display: none; }
+  .progress-bar { width: 0%; height: 100%; background: #ff3366; }
+  .progress-bar.animate-rec { width: 100%; transition-property: width; transition-timing-function: linear; }
+
+  .controls-panel {
+    width: 100%;
+    background: #1e1e1e;
+    border-radius: 14px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
+  .setting-label { font-size: 0.85rem; font-weight: bold; }
+  .stepper { display: flex; align-items: center; gap: 6px; }
+  .btn-step { width: 36px; height: 36px; border-radius: 8px; border: none; background: #3a3a3c; color: #fff; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
+  .btn-step:active { background: #555; }
+  .value-display { font-size: 0.95rem; font-weight: bold; color: #00d2ff; min-width: 50px; text-align: center; }
+
+  /* --------------------------------------------------
+     【大画面・横向き（タブレット / PC / 横持ち）用レイアウト】
+     -------------------------------------------------- */
+  @media (min-aspect-ratio: 1/1) {
+    .app-container {
+      max-width: none; /* 幅制限を解除 */
+      flex-direction: row; /* 左右2カラムに変更 */
     }
 
-    .controls-panel { width: 100%; max-width: 500px; background: #1e1e1e; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-    .setting-row { display: flex; align-items: center; justify-content: space-between; background: #2a2a2a; padding: 6px 10px; border-radius: 8px; }
-    .setting-label { font-size: 0.9rem; font-weight: bold; }
-    .stepper { display: flex; align-items: center; gap: 6px; }
-    .btn-step { width: 40px; height: 40px; border-radius: 8px; border: none; background: #3a3a3c; color: #fff; font-size: 1.3rem; font-weight: bold; cursor: pointer; }
-    .btn-step:active { background: #555; }
-    .value-display { font-size: 1rem; font-weight: bold; color: #00d2ff; min-width: 55px; text-align: center; }
-  </style>
+    /* 左側：映像エリア（画面いっぱいに巨大化） */
+    .video-container {
+      flex: 1;
+      height: 100%;
+    }
+
+    /* 右側：操作パネルエリア（右側に縦に並べる） */
+    .side-panel {
+      width: 320px; /* 右側パネルの固定幅 */
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto; /* 万が一入りきらない場合用 */
+    }
+  }
+</style>
 </head>
 <body>
 
   <header><h1>FormChecker</h1></header>
 
-  <div class="status-banner">
-    <button id="mainBtn" class="btn-top-action btn-start" onclick="handleMainButtonClick()">カメラを起動する</button>
-    <div>
-      <div id="statusText" class="status-text" style="display:none;"></div>
-      <div id="statusSub" class="status-sub">端末を固定してご利用ください</div>
-    </div>
-  </div>
+  <!-- ★ここから新設：画面全体をまとめるラッパー -->
+  <div class="app-container">
 
-  <div class="video-container">
-    <video id="webcam" autoplay playsinline muted></video>
-    <video id="playback" loop playsinline muted style="display:none;"></video>
+    <!-- 1. 映像エリア（横画面のときは左側へ） -->
+    <div class="video-container">
+      <video id="webcam" autoplay playsinline muted></video>
+      <video id="playback" loop playsinline muted style="display:none;"></video>
 
-    <canvas id="motionCanvas" style="display:none;"></canvas>
+      <canvas id="motionCanvas" style="display:none;"></canvas>
 
-    <div id="recIndicator" class="rec-indicator">
-      <div class="rec-dot"></div> REC
-    </div>
+      <div id="recIndicator" class="rec-indicator">
+        <div class="rec-dot"></div> REC
+      </div>
 
-    <div id="motionZoneText" class="motion-zone-text" style="display:none;">MOTION DETECTION</div>
+      <div id="motionZoneText" class="motion-zone-text" style="display:none;">MOTION DETECTION</div>
 
-    <div id="countdownOverlay" class="countdown-overlay">3</div>
+      <div id="countdownOverlay" class="countdown-overlay">3</div>
 
-    <div id="progressBarContainer" class="progress-bar-container">
-      <div id="progressBar" class="progress-bar"></div>
-    </div>
-  </div>
-
-  <div class="controls-panel">
-    <div class="setting-row">
-      <span class="setting-label">録画時間</span>
-      <div class="stepper">
-        <button class="btn-step" onclick="adjustSetting('rec', -0.1)">-</button>
-        <span id="recVal" class="value-display">1.8 秒</span>
-        <button class="btn-step" onclick="adjustSetting('rec', 0.1)">+</button>
+      <div id="progressBarContainer" class="progress-bar-container">
+        <div id="progressBar" class="progress-bar"></div>
       </div>
     </div>
 
-    <div class="setting-row">
-      <span class="setting-label">移動待機時間</span>
-      <div class="stepper">
-        <button class="btn-step" onclick="adjustSetting('move', -0.5)">-</button>
-        <span id="moveVal" class="value-display">3.0 秒</span>
-        <button class="btn-step" onclick="adjustSetting('move', 0.5)">+</button>
-      </div>
-    </div>
+    <!-- ★ここから新設：右側パネル（ステータスと設定をひとまとめ） -->
+    <div class="side-panel">
 
-    <div class="setting-row">
-      <span class="setting-label">再生速度</span>
-      <div class="stepper">
-        <button class="btn-step" onclick="toggleSpeed(-1)">&lt;</button>
-        <span id="speedVal" class="value-display">0.25x</span>
-        <button class="btn-step" onclick="toggleSpeed(1)">&gt;</button>
+      <div class="status-banner">
+        <button id="mainBtn" class="btn-top-action btn-start" onclick="handleMainButtonClick()">カメラを起動する</button>
+        <div>
+          <div id="statusText" class="status-text" style="display:none;"></div>
+          <div id="statusSub" class="status-sub">端末を固定してご利用ください</div>
+        </div>
       </div>
-    </div>
 
-    <div class="setting-row">
-      <span class="setting-label">検知レベル</span>
-      <div class="stepper">
-        <button class="btn-step" onclick="adjustSetting('sensitivity', -5)">-</button>
-        <span id="sensitivityVal" class="value-display">50</span>
-        <button class="btn-step" onclick="adjustSetting('sensitivity', 5)">+</button>
+      <div class="controls-panel">
+        <div class="setting-row">
+          <span class="setting-label">録画時間</span>
+          <div class="stepper">
+            <button class="btn-step" onclick="adjustSetting('rec', -0.1)">-</button>
+            <span id="recVal" class="value-display">1.8 秒</span>
+            <button class="btn-step" onclick="adjustSetting('rec', 0.1)">+</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">移動待機時間</span>
+          <div class="stepper">
+            <button class="btn-step" onclick="adjustSetting('move', -0.5)">-</button>
+            <span id="moveVal" class="value-display">3.0 秒</span>
+            <button class="btn-step" onclick="adjustSetting('move', 0.5)">+</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">再生速度</span>
+          <div class="stepper">
+            <button class="btn-step" onclick="toggleSpeed(-1)">&lt;</button>
+            <span id="speedVal" class="value-display">0.25x</span>
+            <button class="btn-step" onclick="toggleSpeed(1)">&gt;</button>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <span class="setting-label">検知レベル</span>
+          <div class="stepper">
+            <button class="btn-step" onclick="adjustSetting('sensitivity', -5)">-</button>
+            <span id="sensitivityVal" class="value-display">50</span>
+            <button class="btn-step" onclick="adjustSetting('sensitivity', 5)">+</button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
+    </div> <!-- /.side-panel 終わり -->
+
+  </div> <!-- /.app-container 終わり -->
   <script>
     let recordDuration = parseFloat(localStorage.getItem('formchecker_rec')) || 1.8;
     let moveDelay      = parseFloat(localStorage.getItem('formchecker_move')) || 3.0;
