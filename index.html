@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -7,7 +6,6 @@
   <title>FormChecker - フォームチェッカー</title>
 
   <!-- PWA設定 -->
-
   <link rel="manifest" href="manifest.json?v=2.1.7">
   <link rel="apple-touch-icon" href="icon-192.png">
   <meta name="theme-color" content="#1e1e1e">
@@ -39,10 +37,6 @@
       gap: 8px;
     }
 
-    /* =========================================================
-       1. 最上部：ヘッダー
-       ========================================================= */
-
     header {
       width: 100%;
       text-align: center;
@@ -54,10 +48,6 @@
       color: #4da6ff;
       letter-spacing: 1px;
     }
-
-    /* =========================================================
-       2. ステータス＆メインボタン
-       ========================================================= */
 
     .status-banner {
       width: 100%;
@@ -82,6 +72,7 @@
     .status-sub {
       font-size: 0.75rem;
       color: #aaa;
+      line-height: 1.5;
     }
 
     .btn-top-action {
@@ -106,18 +97,13 @@
     }
 
     /* =========================================================
-       カメラ許可エラー画面
+       カメラ許可案内
        ========================================================= */
 
     .camera-help {
       display: none;
       width: 100%;
-      background: #1e1e1e;
-      border: 1px solid #444;
-      border-radius: 10px;
-      padding: 12px;
-      text-align: left;
-      flex-shrink: 0;
+      margin-top: 4px;
     }
 
     .camera-help.show {
@@ -125,89 +111,68 @@
     }
 
     .camera-help-title {
-      font-size: 1.05rem;
+      font-size: 1rem;
       font-weight: bold;
       color: #ffcc00;
-      text-align: center;
-      margin-bottom: 7px;
-    }
-
-    .camera-help-description {
-      font-size: 0.8rem;
-      line-height: 1.5;
-      color: #ccc;
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    .camera-help-button {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 7px;
-      background: #007bff;
-      color: white;
-      font-size: 0.95rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .camera-help-button:active {
-      background: #005fcc;
-    }
-
-    .camera-howto {
-      margin-top: 10px;
-      border-top: 1px solid #333;
-      padding-top: 9px;
-    }
-
-    .camera-howto-toggle {
-      width: 100%;
-      border: none;
-      background: transparent;
-      color: #00d2ff;
-      font-size: 0.85rem;
-      text-align: center;
-      padding: 5px;
-      cursor: pointer;
-    }
-
-    .camera-howto-content {
-      display: none;
-      margin-top: 8px;
-      padding: 10px;
-      background: #2a2a2a;
-      border-radius: 7px;
-      font-size: 0.78rem;
-      line-height: 1.65;
-      color: #ddd;
-    }
-
-    .camera-howto-content.show {
-      display: block;
-    }
-
-    .camera-howto-content h3 {
-      font-size: 0.9rem;
-      color: #fff;
       margin-bottom: 6px;
     }
 
-    .camera-howto-content ol {
-      padding-left: 20px;
+    .camera-help-message {
+      font-size: 0.78rem;
+      color: #ddd;
+      line-height: 1.55;
+      margin-bottom: 8px;
     }
 
-    .camera-howto-content li {
-      margin-bottom: 3px;
-    }
-
-    .camera-help-generic {
+    .camera-help-details {
       display: none;
+      background: #292929;
+      border-radius: 7px;
+      padding: 9px;
+      margin-top: 6px;
+      text-align: left;
+    }
+
+    .camera-help-details.show {
+      display: block;
+    }
+
+    .camera-help-details h3 {
+      font-size: 0.82rem;
+      color: #4da6ff;
+      margin-bottom: 5px;
+    }
+
+    .camera-help-details p {
+      font-size: 0.74rem;
+      color: #ddd;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .camera-help-details p:last-child {
+      margin-bottom: 0;
+    }
+
+    .btn-help {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      background: #3a3a3c;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-retry {
+      background: #007bff;
+      color: white;
     }
 
     /* =========================================================
-       3. 中央：メイン映像エリア
+       メイン映像エリア
        ========================================================= */
 
     .video-container {
@@ -330,7 +295,7 @@
     }
 
     /* =========================================================
-       4. 設定パネル
+       設定パネル
        ========================================================= */
 
     .controls-panel {
@@ -393,10 +358,6 @@
       min-width: 52px;
       text-align: center;
     }
-
-    /* =========================================================
-       縦画面
-       ========================================================= */
 
     @media (max-aspect-ratio: 1/1) {
 
@@ -474,20 +435,6 @@
 
       .status-sub {
         font-size: 0.8rem;
-      }
-
-      /* カメラ許可エラー画面 */
-      .camera-help {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: min(420px, 88vw);
-        max-height: 88vh;
-        overflow-y: auto;
-        z-index: 100;
-        background: rgba(30, 30, 30, 0.97);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
       }
 
       .controls-panel {
@@ -572,9 +519,13 @@
       .progress-bar-container {
         height: 6px;
       }
+
+      .camera-help-details {
+        max-height: 55vh;
+        overflow-y: auto;
+      }
     }
   </style>
-
 </head>
 
 <body>
@@ -593,121 +544,131 @@
 
   <div class="status-banner">
 
-```
-<button
-  id="mainBtn"
-  class="btn-top-action btn-start"
-  onclick="handleMainButtonClick()">
-  カメラを起動する
-</button>
+    <button
+      id="mainBtn"
+      class="btn-top-action btn-start"
+      onclick="handleMainButtonClick()">
+      カメラを起動する
+    </button>
 
-<div>
-  <div
-    id="statusText"
-    class="status-text"
-    style="display:none;">
-  </div>
+    <div id="normalStatusArea">
 
-  <div
-    id="statusSub"
-    class="status-sub">
-    端末を固定してご利用ください
-  </div>
-</div>
-```
+      <div
+        id="statusText"
+        class="status-text"
+        style="display:none;">
+      </div>
 
-  </div>
-
-  <!-- =========================================================
-       カメラ許可エラー・案内
-       ========================================================= -->
-
-  <div
-    id="cameraHelp"
-    class="camera-help">
-
-```
-<div class="camera-help-title">
-  カメラの許可が必要です
-</div>
-
-<div class="camera-help-description">
-  FormCheckerはバッティングフォームを撮影するために<br>
-  カメラを使用します。
-</div>
-
-<button
-  class="camera-help-button"
-  onclick="retryCamera()">
-  カメラを許可してもう一度試す
-</button>
-
-<div class="camera-howto">
-
-  <button
-    id="cameraHowtoToggle"
-    class="camera-howto-toggle"
-    onclick="toggleCameraHowTo()">
-    使用方法を見る ▼
-  </button>
-
-  <div
-    id="cameraHowtoContent"
-    class="camera-howto-content">
-
-    <!-- Android -->
-    <div id="androidHowTo">
-
-      <h3>Android（Google Chrome）の場合</h3>
-
-      <ol>
-        <li>Chrome右上の「︙」をタップ</li>
-        <li>「設定」をタップ</li>
-        <li>「サイトの設定」をタップ</li>
-        <li>「カメラ」をタップ</li>
-        <li>カメラの使用を許可する設定を確認</li>
-        <li>FormCheckerに戻る</li>
-        <li>「カメラを許可してもう一度試す」をタップ</li>
-      </ol>
+      <div
+        id="statusSub"
+        class="status-sub">
+        端末を固定してご利用ください
+      </div>
 
     </div>
 
-    <!-- iPhone -->
+    <!-- =======================================================
+         カメラ許可案内
+         ======================================================= -->
+
     <div
-      id="iphoneHowTo"
-      style="display:none;">
+      id="cameraHelp"
+      class="camera-help">
 
-      <h3>iPhone（Safari）の場合</h3>
+      <div class="camera-help-title">
+        カメラの許可が必要です
+      </div>
 
-      <ol>
-        <li>「設定」を開く</li>
-        <li>「Safari」をタップ</li>
-        <li>「カメラ」をタップ</li>
-        <li>カメラの使用を許可する設定を確認</li>
-        <li>FormCheckerに戻る</li>
-        <li>「カメラを許可してもう一度試す」をタップ</li>
-      </ol>
+      <div
+        id="cameraHelpMessage"
+        class="camera-help-message">
+        FormCheckerはバッティングフォームを撮影するためにカメラを使用します。
+      </div>
+
+      <button
+        id="retryCameraBtn"
+        class="btn-help btn-retry"
+        onclick="retryCameraPermission()">
+        カメラを許可してもう一度試す
+      </button>
+
+      <button
+        id="helpToggleBtn"
+        class="btn-help"
+        style="margin-top:6px;"
+        onclick="toggleCameraHelp()">
+        使用方法を見る
+      </button>
+
+      <div
+        id="cameraHelpDetails"
+        class="camera-help-details">
+
+        <div id="androidHelp">
+
+          <h3>Android / Chromeの場合</h3>
+
+          <p>
+            まず、上の「カメラを許可してもう一度試す」を押してください。
+            Chromeからカメラの許可を求められたら「許可」を選んでください。
+          </p>
+
+          <p>
+            それでも表示されない場合：<br>
+            ① Chrome右上の「︙」<br>
+            ②「設定」<br>
+            ③「サイトの設定」<br>
+            ④「カメラ」<br>
+            ⑤ FormCheckerのサイトが「ブロック中」なら「許可」
+          </p>
+
+          <p>
+            設定を変更したら、この画面に戻って
+            「カメラを許可してもう一度試す」を押してください。
+          </p>
+
+        </div>
+
+        <div id="iphoneHelp">
+
+          <h3>iPhone / Safariの場合</h3>
+
+          <p>
+            まず、上の「カメラを許可してもう一度試す」を押してください。
+            Safariからカメラの許可を求められたら「許可」を選んでください。
+          </p>
+
+          <p>
+            それでも表示されない場合は、SafariのWebサイト設定で
+            カメラが「拒否」になっていないか確認してください。
+          </p>
+
+          <p>
+            SafariでFormCheckerを開いた状態から、
+            ページメニューの「Webサイトの設定」で
+            カメラの設定を確認することもできます。
+          </p>
+
+        </div>
+
+        <div id="otherHelp">
+
+          <h3>カメラの許可について</h3>
+
+          <p>
+            お使いのブラウザや端末によって、
+            カメラの許可方法が異なる場合があります。
+          </p>
+
+          <p>
+            FormCheckerはカメラの使用許可を確認してから撮影を開始します。
+          </p>
+
+        </div>
+
+      </div>
 
     </div>
-
-    <!-- その他 -->
-    <div
-      id="genericHowTo"
-      class="camera-help-generic">
-
-      <h3>カメラの設定を確認してください</h3>
-
-      <p>
-        お使いのブラウザで、FormCheckerのカメラ使用が
-        許可されているか確認してください。
-      </p>
-
-    </div>
-
-  </div>
-
-</div>
-```
 
   </div>
 
@@ -717,60 +678,58 @@
 
   <div class="video-container">
 
-```
-<video
-  id="webcam"
-  autoplay
-  playsinline
-  muted>
-</video>
+    <video
+      id="webcam"
+      autoplay
+      playsinline
+      muted>
+    </video>
 
-<video
-  id="playback"
-  loop
-  playsinline
-  muted
-  style="display:none;">
-</video>
+    <video
+      id="playback"
+      loop
+      playsinline
+      muted
+      style="display:none;">
+    </video>
 
-<canvas
-  id="motionCanvas"
-  style="display:none;">
-</canvas>
+    <canvas
+      id="motionCanvas"
+      style="display:none;">
+    </canvas>
 
-<div
-  id="recIndicator"
-  class="rec-indicator">
+    <div
+      id="recIndicator"
+      class="rec-indicator">
 
-  <div class="rec-dot"></div>
-  REC
+      <div class="rec-dot"></div>
+      REC
 
-</div>
+    </div>
 
-<div
-  id="motionZoneText"
-  class="motion-zone-text"
-  style="display:none;">
-  MOTION DETECTION
-</div>
+    <div
+      id="motionZoneText"
+      class="motion-zone-text"
+      style="display:none;">
+      MOTION DETECTION
+    </div>
 
-<div
-  id="countdownOverlay"
-  class="countdown-overlay">
-  3
-</div>
+    <div
+      id="countdownOverlay"
+      class="countdown-overlay">
+      3
+    </div>
 
-<div
-  id="progressBarContainer"
-  class="progress-bar-container">
+    <div
+      id="progressBarContainer"
+      class="progress-bar-container">
 
-  <div
-    id="progressBar"
-    class="progress-bar">
-  </div>
+      <div
+        id="progressBar"
+        class="progress-bar">
+      </div>
 
-</div>
-```
+    </div>
 
   </div>
 
@@ -782,127 +741,125 @@
     id="controlsPanel"
     class="controls-panel">
 
-```
-<div class="setting-row">
+    <div class="setting-row">
 
-  <span class="setting-label">
-    録画時間
-  </span>
+      <span class="setting-label">
+        録画時間
+      </span>
 
-  <div class="stepper">
+      <div class="stepper">
 
-    <button
-      class="btn-step"
-      onclick="adjustSetting('rec', -0.1)">
-      -
-    </button>
+        <button
+          class="btn-step"
+          onclick="adjustSetting('rec', -0.1)">
+          -
+        </button>
 
-    <span
-      id="recVal"
-      class="value-display">
-      1.8 秒
-    </span>
+        <span
+          id="recVal"
+          class="value-display">
+          1.8 秒
+        </span>
 
-    <button
-      class="btn-step"
-      onclick="adjustSetting('rec', 0.1)">
-      +
-    </button>
+        <button
+          class="btn-step"
+          onclick="adjustSetting('rec', 0.1)">
+          +
+        </button>
 
-  </div>
+      </div>
 
-</div>
+    </div>
 
-<div class="setting-row">
+    <div class="setting-row">
 
-  <span class="setting-label">
-    移動待機時間
-  </span>
+      <span class="setting-label">
+        移動待機時間
+      </span>
 
-  <div class="stepper">
+      <div class="stepper">
 
-    <button
-      class="btn-step"
-      onclick="adjustSetting('move', -0.5)">
-      -
-    </button>
+        <button
+          class="btn-step"
+          onclick="adjustSetting('move', -0.5)">
+          -
+        </button>
 
-    <span
-      id="moveVal"
-      class="value-display">
-      3.0 秒
-    </span>
+        <span
+          id="moveVal"
+          class="value-display">
+          3.0 秒
+        </span>
 
-    <button
-      class="btn-step"
-      onclick="adjustSetting('move', 0.5)">
-      +
-    </button>
+        <button
+          class="btn-step"
+          onclick="adjustSetting('move', 0.5)">
+          +
+        </button>
 
-  </div>
+      </div>
 
-</div>
+    </div>
 
-<div class="setting-row">
+    <div class="setting-row">
 
-  <span class="setting-label">
-    再生速度
-  </span>
+      <span class="setting-label">
+        再生速度
+      </span>
 
-  <div class="stepper">
+      <div class="stepper">
 
-    <button
-      class="btn-step"
-      onclick="toggleSpeed(-1)">
-      &lt;
-    </button>
+        <button
+          class="btn-step"
+          onclick="toggleSpeed(-1)">
+          &lt;
+        </button>
 
-    <span
-      id="speedVal"
-      class="value-display">
-      0.25x
-    </span>
+        <span
+          id="speedVal"
+          class="value-display">
+          0.25x
+        </span>
 
-    <button
-      class="btn-step"
-      onclick="toggleSpeed(1)">
-      &gt;
-    </button>
+        <button
+          class="btn-step"
+          onclick="toggleSpeed(1)">
+          &gt;
+        </button>
 
-  </div>
+      </div>
 
-</div>
+    </div>
 
-<div class="setting-row">
+    <div class="setting-row">
 
-  <span class="setting-label">
-    検知レベル
-  </span>
+      <span class="setting-label">
+        検知レベル
+      </span>
 
-  <div class="stepper">
+      <div class="stepper">
 
-    <button
-      class="btn-step"
-      onclick="adjustSetting('sensitivity', -5)">
-      -
-    </button>
+        <button
+          class="btn-step"
+          onclick="adjustSetting('sensitivity', -5)">
+          -
+        </button>
 
-    <span
-      id="sensitivityVal"
-      class="value-display">
-      50
-    </span>
+        <span
+          id="sensitivityVal"
+          class="value-display">
+          50
+        </span>
 
-    <button
-      class="btn-step"
-      onclick="adjustSetting('sensitivity', 5)">
-      +
-    </button>
+        <button
+          class="btn-step"
+          onclick="adjustSetting('sensitivity', 5)">
+          +
+        </button>
 
-  </div>
+      </div>
 
-</div>
-```
+    </div>
 
   </div>
 
@@ -1022,14 +979,26 @@
     const controlsPanel =
       document.getElementById('controlsPanel');
 
+    const normalStatusArea =
+      document.getElementById('normalStatusArea');
+
     const cameraHelp =
       document.getElementById('cameraHelp');
 
-    const cameraHowtoContent =
-      document.getElementById('cameraHowtoContent');
+    const cameraHelpDetails =
+      document.getElementById('cameraHelpDetails');
 
-    const cameraHowtoToggle =
-      document.getElementById('cameraHowtoToggle');
+    const helpToggleBtn =
+      document.getElementById('helpToggleBtn');
+
+    const androidHelp =
+      document.getElementById('androidHelp');
+
+    const iphoneHelp =
+      document.getElementById('iphoneHelp');
+
+    const otherHelp =
+      document.getElementById('otherHelp');
 
     /* =========================================================
        録画関連
@@ -1050,34 +1019,31 @@
 
     function detectDevice() {
 
-      const userAgent =
+      const ua =
         navigator.userAgent ||
         navigator.vendor ||
         window.opera ||
         '';
 
-      const isIPhone =
-        /iPhone/i.test(userAgent);
+      const isAndroid =
+        /Android/i.test(ua);
 
-      const isIPad =
-        /iPad/i.test(userAgent) ||
+      const isIOS =
+        /iPhone|iPad|iPod/i.test(ua) ||
         (
           navigator.platform === 'MacIntel' &&
           navigator.maxTouchPoints > 1
         );
 
-      const isAndroid =
-        /Android/i.test(userAgent);
-
-      if (isIPhone || isIPad) {
-        return 'iphone';
-      }
-
       if (isAndroid) {
         return 'android';
       }
 
-      return 'generic';
+      if (isIOS) {
+        return 'iphone';
+      }
+
+      return 'other';
     }
 
     /* =========================================================
@@ -1086,52 +1052,42 @@
 
     function showCameraHelp() {
 
-      const device =
-        detectDevice();
+      currentState = STATE.INIT;
+
+      controlsPanel.classList.add('hidden');
+
+      normalStatusArea.style.display = 'none';
 
       cameraHelp.classList.add('show');
 
-      cameraHowtoContent.classList.remove('show');
+      mainBtn.innerText =
+        'カメラを許可してもう一度試す';
 
-      cameraHowtoToggle.innerText =
-        '使用方法を見る ▼';
+      mainBtn.className =
+        'btn-top-action btn-retry';
 
-      document.getElementById(
-        'androidHowTo'
-      ).style.display =
+      cameraHelpDetails.classList.remove('show');
+
+      helpToggleBtn.innerText =
+        '使用方法を見る';
+
+      const device =
+        detectDevice();
+
+      androidHelp.style.display =
         device === 'android'
           ? 'block'
           : 'none';
 
-      document.getElementById(
-        'iphoneHowTo'
-      ).style.display =
+      iphoneHelp.style.display =
         device === 'iphone'
           ? 'block'
           : 'none';
 
-      document.getElementById(
-        'genericHowTo'
-      ).style.display =
-        device === 'generic'
+      otherHelp.style.display =
+        device === 'other'
           ? 'block'
           : 'none';
-
-      controlsPanel.classList.add(
-        'hidden'
-      );
-
-      statusText.style.display =
-        'block';
-
-      statusText.innerText =
-        'カメラを使用できません';
-
-      statusText.style.color =
-        '#ffcc00';
-
-      statusSub.innerText =
-        'カメラの許可を確認してください';
     }
 
     /* =========================================================
@@ -1140,48 +1096,42 @@
 
     function hideCameraHelp() {
 
-      cameraHelp.classList.remove(
-        'show'
-      );
+      cameraHelp.classList.remove('show');
 
-      cameraHowtoContent.classList.remove(
-        'show'
-      );
+      normalStatusArea.style.display =
+        'block';
 
-      cameraHowtoToggle.innerText =
-        '使用方法を見る ▼';
+      mainBtn.innerText =
+        '撮影待機に戻る';
+
+      mainBtn.className =
+        'btn-top-action btn-reset';
     }
 
     /* =========================================================
-       使用方法の開閉
+       使用方法を見る
        ========================================================= */
 
-    function toggleCameraHowTo() {
+    function toggleCameraHelp() {
 
-      const isOpen =
-        cameraHowtoContent.classList.contains(
-          'show'
-        );
+      const isShown =
+        cameraHelpDetails.classList.contains('show');
 
-      if (isOpen) {
+      if (isShown) {
 
-        cameraHowtoContent.classList.remove(
-          'show'
-        );
+        cameraHelpDetails.classList.remove('show');
 
-        cameraHowtoToggle.innerText =
-          '使用方法を見る ▼';
+        helpToggleBtn.innerText =
+          '使用方法を見る';
 
       }
 
       else {
 
-        cameraHowtoContent.classList.add(
-          'show'
-        );
+        cameraHelpDetails.classList.add('show');
 
-        cameraHowtoToggle.innerText =
-          '使用方法を閉じる ▲';
+        helpToggleBtn.innerText =
+          '使用方法を閉じる';
 
       }
     }
@@ -1315,7 +1265,6 @@
       if (
         currentState === STATE.PLAYBACK
       ) {
-
         playback.playbackRate =
           speedOptions[speedIndex];
       }
@@ -1335,7 +1284,10 @@
       lang = 'en-US'
     ) {
 
-      if ('speechSynthesis' in window) {
+      if (
+        text &&
+        'speechSynthesis' in window
+      ) {
 
         window.speechSynthesis.cancel();
 
@@ -1358,9 +1310,12 @@
 
         initCamera();
 
-      } else {
+      }
+
+      else {
 
         resetToStandby();
+
       }
     }
 
@@ -1368,9 +1323,7 @@
        カメラ再試行
        ========================================================= */
 
-    function retryCamera() {
-
-      hideCameraHelp();
+    function retryCameraPermission() {
 
       initCamera();
     }
@@ -1381,17 +1334,29 @@
 
     async function initCamera() {
 
+      if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+      ) {
+
+        showCameraHelp();
+
+        document.getElementById(
+          'cameraHelpMessage'
+        ).innerText =
+          'このブラウザではカメラを利用できません。ChromeまたはSafariなど、カメラに対応したブラウザでお試しください。';
+
+        return;
+      }
+
       try {
 
-        if (
-          !navigator.mediaDevices ||
-          !navigator.mediaDevices.getUserMedia
-        ) {
-
-          showCameraHelp();
-
-          return;
-        }
+        /*
+         * 1920×1080 / 60fps は「理想値」として要求。
+         *
+         * 端末が実際に対応していない場合に、
+         * 最初から低品質へ落とす処理は行わない。
+         */
 
         mediaStream =
           await navigator.mediaDevices.getUserMedia({
@@ -1434,7 +1399,14 @@
         statusText.style.display =
           'block';
 
-        speak('', 'en-US');
+        statusText.innerText =
+          'カメラ準備完了';
+
+        statusText.style.color =
+          '#00ffcc';
+
+        statusSub.innerText =
+          '端末を固定してご利用ください';
 
         setStandbyState();
 
@@ -1448,26 +1420,70 @@
           err.message
         );
 
-        /*
-         * カメラ権限・カメラ利用に関する失敗は、
-         * 専用の案内画面を表示する。
-         *
-         * NotAllowedError:
-         *   ユーザーによる拒否、
-         *   ブラウザ側の権限設定など。
-         *
-         * NotFoundError:
-         *   カメラが見つからない。
-         *
-         * SecurityError:
-         *   セキュリティ上の理由で利用できない。
-         *
-         * その他の場合も、ユーザーが
-         * 「カメラを使えない」という状態で
-         * 行き止まりにならないよう案内を表示する。
-         */
+        if (mediaStream) {
+
+          mediaStream.getTracks().forEach(
+            track => track.stop()
+          );
+
+          mediaStream = null;
+        }
+
+        webcam.srcObject = null;
 
         showCameraHelp();
+
+        /*
+         * エラー内容によって案内文を少し変更。
+         */
+
+        const message =
+          document.getElementById(
+            'cameraHelpMessage'
+          );
+
+        if (
+          err.name === 'NotAllowedError' ||
+          err.name === 'PermissionDeniedError'
+        ) {
+
+          message.innerText =
+            'カメラの使用が許可されていません。上のボタンを押して、カメラの使用を許可してください。';
+
+        }
+
+        else if (
+          err.name === 'NotFoundError'
+        ) {
+
+          message.innerText =
+            'カメラが見つかりませんでした。カメラが利用できる端末・ブラウザでお試しください。';
+
+        }
+
+        else if (
+          err.name === 'NotReadableError'
+        ) {
+
+          message.innerText =
+            'カメラを使用できませんでした。他のアプリがカメラを使用していないか確認してください。';
+
+        }
+
+        else if (
+          err.name === 'SecurityError'
+        ) {
+
+          message.innerText =
+            'ブラウザのセキュリティ設定によりカメラを使用できませんでした。使用方法をご確認ください。';
+
+        }
+
+        else {
+
+          message.innerText =
+            'カメラの使用を開始できませんでした。カメラの許可を確認して、もう一度お試しください。';
+        }
       }
     }
 
@@ -1576,8 +1592,6 @@
       controlsPanel.classList.remove(
         'hidden'
       );
-
-      hideCameraHelp();
 
       if (recordedBlobUrl) {
 
@@ -2217,6 +2231,11 @@
         })
         .catch(err => {
 
+          console.log(
+            'Playback error:',
+            err
+          );
+
           alert(
             '動画の再生に失敗しました。'
           );
@@ -2274,6 +2293,15 @@
                         };
                     }
                   };
+              }
+            )
+            .catch(
+              (err) => {
+
+                console.log(
+                  'Service Worker registration failed:',
+                  err
+                );
               }
             );
         }
