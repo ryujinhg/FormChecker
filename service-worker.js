@@ -1,5 +1,5 @@
 // バージョン番号だけ毎回変更
-const CACHE_NAME = 'formchecker-cache-v2.1.8';
+const CACHE_NAME = 'formchecker-cache-v2.2.0';
 
 const FILES_TO_CACHE = [
   './',
